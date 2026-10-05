@@ -1,6 +1,6 @@
 # @itookit/mdxeditor
 
-目录 `packages/mdx`，发布名 `@itookit/mdxeditor`。
+独立仓库 `mushuanli/mdxeditor`，发布名 `@itookit/mdxeditor`。
 CodeMirror 6 驱动的 Markdown/MDX 编辑器。编辑/预览双模式、流式渲染、Mermaid/数学公式/PlantUML。
 
 ## Architecture
@@ -32,7 +32,7 @@ const bytes = await context.getAssets()?.read('image.png');
 const path = context.getDocumentPath();
 ```
 
-VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话打印位于 `packages/mdx-adapter`。
+VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话打印位于 itookit 仓库的 `packages/mdx-adapter`。
 
 详情: [插件目录](./doc/plugin-catalog.md)
 
@@ -44,4 +44,4 @@ VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话�
 - 暗色主题 CSS 同时使用 `[data-theme="dark"]` 和 `@media (prefers-color-scheme: dark)` 选择器，支持手动和系统主题切换
 - Mermaid 默认使用本地依赖且只在出现 `language-mermaid` 块时动态加载；Tauri 构建把其依赖放入独立 `mermaid-runtime` chunk。MathJax 只在渲染结果含 `\\(`/`\\[` 时加载。普通 Markdown 更新不得触发这两个运行时。
 
-运行: `pnpm --filter @itookit/mdxeditor typecheck` / `test` / `build`
+运行: `pnpm typecheck` / `pnpm test` / `pnpm build`
