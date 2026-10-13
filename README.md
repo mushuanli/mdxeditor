@@ -287,3 +287,9 @@ npm publish --access public
 ```
 
 包根提供 ESM、CommonJS 和 TypeScript 声明；样式从 `@itookit/mdxeditor/style.css` 导入。源码与测试独立维护于本仓库，MindOS 通过 npm 的固定版本接入。
+
+### 打印文件名
+
+文件打印默认显示去掉最后一个扩展名的文件名，例如 `简历.mind` 显示为 `简历`。打印选项中的“显示文件名”复选框默认勾选，取消后隐藏文件名标题；显式传入的作者、日期和版本元数据仍可显示。
+
+`PrintOptions.fileName` 指定文件名（优先于 `title`，打印时自动去掉路径和扩展名）；`showFileName: false` 隐藏标题。显式 `title` 可用于自定义文档标题，其内容不进行后缀处理。设置 `fontSize` 会跳过选项对话框，可同时通过 `showFileName` 指定显示策略。

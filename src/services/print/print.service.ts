@@ -2,6 +2,7 @@
 
 import { MDxRenderer } from '../../renderer/mdx-renderer';
 import type { MDxRendererConfig } from '../../renderer/mdx-renderer';
+import { showPrintOptionsDialog } from './print-options';
 
 // ✅ 从常量文件导入样式
 import { PRINT_STYLES } from './print.styles';
@@ -12,6 +13,12 @@ import { PRINT_STYLES } from './print.styles';
 export interface PrintOptions {
     /** 文档标题 */
     title?: string;
+    /** File name used as the print title; its final extension is omitted. */
+    fileName?: string;
+    /** Show the file name in the print header (default: true). */
+    showFileName?: boolean;
+    /** Locale for the print options dialog. */
+    locale?: 'zh-CN' | 'en';
 
     /** 自定义样式（CSS 字符串或数组） */
     styles?: string | string[];
@@ -127,66 +134,12 @@ export class DefaultPrintService implements PrintService {
     /**
      * 解析打印选项：fontSize 未显式设置时弹出选择对话框
      */
-    private async resolvePrintOptions(options: PrintOptions): Promise<PrintOptions> {
+    private async resolvePrintOptions(options: PrintOptions): Promise<PrintOptions | null> {
         if (options.fontSize) {
             return options;
         }
-        const fontSize = await this.showPrintOptionsDialog();
-        return { ...options, fontSize };
-    }
-
-    /**
-     * 弹出打印选项对话框，返回用户选择的字体大小
-     */
-    private showPrintOptionsDialog(): Promise<'small' | 'normal' | 'large'> {
-        return new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.style.cssText =
-                'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);';
-
-            const options: Array<{ value: 'small' | 'normal' | 'large'; label: string; desc: string }> = [
-                { value: 'small', label: '小', desc: '12px' },
-                { value: 'normal', label: '中', desc: '14px' },
-                { value: 'large', label: '大', desc: '16px' },
-            ];
-
-            const buttons = options.map(o =>
-                `<button data-size="${o.value}"
-                    style="flex:1;padding:12px 20px;border:2px solid #d0d5dd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;transition:border-color .2s;">
-                    <div style="font-weight:600;margin-bottom:4px;">${o.label}</div>
-                    <div style="color:#656d76;font-size:12px;">${o.desc}</div>
-                </button>`
-            ).join('');
-
-            overlay.innerHTML = `
-                <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-                    <div style="font-size:16px;font-weight:600;margin-bottom:16px;">打印字体大小</div>
-                    <div style="display:flex;gap:12px;margin-bottom:16px;">${buttons}</div>
-                    <div style="display:flex;justify-content:flex-end;gap:8px;">
-                        <button id="mdx-print-cancel"
-                            style="padding:8px 16px;border:1px solid #d0d5dd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;">取消</button>
-                    </div>
-                </div>`;
-
-            document.body.appendChild(overlay);
-
-            const cleanup = (value?: 'small' | 'normal' | 'large') => {
-                document.body.removeChild(overlay);
-                resolve(value || 'normal');
-            };
-
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) cleanup('normal');
-            });
-
-            overlay.querySelector('#mdx-print-cancel')!.addEventListener('click', () => cleanup('normal'));
-
-            overlay.querySelectorAll<HTMLButtonElement>('[data-size]').forEach(btn => {
-                btn.addEventListener('click', () => cleanup(btn.dataset.size as 'small' | 'normal' | 'large'));
-                btn.addEventListener('mouseenter', () => { btn.style.borderColor = '#4f46e5'; });
-                btn.addEventListener('mouseleave', () => { btn.style.borderColor = '#d0d5dd'; });
-            });
-        });
+        const selected = await showPrintOptionsDialog(options.showFileName !== false, options.locale);
+        return selected ? { ...options, ...selected } : null;
     }
 
     /**
@@ -197,7 +150,7 @@ export class DefaultPrintService implements PrintService {
             return '';
         }
 
-        const title = options.title || 'Untitled Document';
+        const title = this.printTitle(options);
         const meta = options.headerMeta || {};
 
         let metaItems = '';
@@ -215,9 +168,10 @@ export class DefaultPrintService implements PrintService {
             metaItems += `<span class="mdx-print-header__meta-item">v${this.escapeHtml(meta.version)}</span>`;
         }
 
+        if (options.showFileName === false && !metaItems) return '';
         return `
             <header class="mdx-print-header">
-                <h1 class="mdx-print-header__title">${this.escapeHtml(title)}</h1>
+                ${options.showFileName === false ? '' : `<h1 class="mdx-print-header__title">${this.escapeHtml(title)}</h1>`}
                 ${metaItems ? `<div class="mdx-print-header__meta">${metaItems}</div>` : ''}
             </header>
         `;
@@ -255,6 +209,7 @@ export class DefaultPrintService implements PrintService {
      */
     async print(markdown: string, options: PrintOptions = {}): Promise<void> {
         const resolved = await this.resolvePrintOptions(options);
+        if (!resolved) return;
         const contentHtml = await this.renderForPrint(markdown, resolved);
         await this.printFromHtml(contentHtml, resolved);
     }
@@ -264,12 +219,13 @@ export class DefaultPrintService implements PrintService {
      */
     async printFromHtml(contentHtml: string, options: PrintOptions = {}): Promise<void> {
         const resolved = await this.resolvePrintOptions(options);
+        if (!resolved) return;
         const styles = this.getStyles(resolved);
         const header = this.buildHeader(resolved);
 
         // 确定变体类名
         const variantClass = resolved.variant === 'compact' ? 'mdx-print--compact' : '';
-        const headerClass = resolved.showHeader === false ? 'mdx-print--no-header' : '';
+        const headerClass = header.trim() ? '' : 'mdx-print--no-header';
 
         // 在主文档中创建打印容器，通过 @media print 隔离
         const containerId = 'mdx-print-overlay';
@@ -325,7 +281,8 @@ export class DefaultPrintService implements PrintService {
         await new Promise(resolve => setTimeout(resolve, 300));
 
         const originalTitle = document.title;
-        if (resolved.title) document.title = resolved.title;
+        if (resolved.showFileName === false) document.title = '';
+        else if (resolved.title || resolved.fileName) document.title = this.printTitle(resolved);
         // 必须在 print() 前注册：阻塞式打印可能在返回前触发 afterprint。
         const cleanup = this.cleanupAfterPrint(container, styleEl, originalTitle);
         try {
@@ -336,10 +293,15 @@ export class DefaultPrintService implements PrintService {
         }
     }
 
-    /**
-     * 打印前预处理：展开所有折叠内容
-     * - 确保所有 <details> 带 open 属性（CSS 不足以可靠展开）
-     */
+    /** Keep arbitrary document titles intact; only explicit file names lose their extension. */
+    private printTitle(options: PrintOptions): string {
+        if (!options.fileName) return options.title || 'Untitled Document';
+        const name = options.fileName.split(/[\\/]/).pop() || options.fileName;
+        const dot = name.lastIndexOf('.');
+        return dot > 0 && dot < name.length - 1 ? name.slice(0, dot) : name;
+    }
+
+    /** Expand collapsed details for the printed page. */
     private preprocessHtmlForPrint(html: string): string {
         // 确保所有 <details> 带 open 属性
         return html.replace(

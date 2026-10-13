@@ -307,7 +307,10 @@ export class MDxEditor implements IEditor {
         const html = this.modeManager.getRenderContainer()?.innerHTML || '';
         if (!html.trim()) return;
         await this.getPrintService().printFromHtml(html, {
-            title: this.config.title, showHeader: true, ...options,
+            title: this.config.title,
+            locale: this.config.locale,
+            fileName: options?.title && options.title !== this.config.title ? undefined : this.config.title || this.config.documentPath,
+            showHeader: true, ...options,
         });
     }
 

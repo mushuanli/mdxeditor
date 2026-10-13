@@ -16,6 +16,69 @@ afterEach(() => {
 });
 
 describe('print title', () => {
+    it.each(['简历.mind', 'notes.md', 'report.final.txt', '.gitignore'])('prints %s without its file extension', async fileName => {
+        vi.useFakeTimers(); document.title = 'Application';
+        const expected = fileName === '.gitignore' ? fileName : fileName.slice(0, fileName.lastIndexOf('.'));
+        vi.spyOn(window, 'print').mockImplementation(() => {
+            expect(document.querySelector('.mdx-print-header__title')?.textContent).toBe(expected);
+            expect(document.title).toBe(expected); window.dispatchEvent(new Event('afterprint'));
+        });
+        const printing = new DefaultPrintService().printFromHtml('<p>Body</p>', { fileName, showHeader: true, fontSize: 'normal' });
+        await vi.advanceTimersByTimeAsync(300); await printing;
+        expect(document.title).toBe('Application');
+    });
+
+    it('allows hiding the file name while retaining explicitly supplied metadata', async () => {
+        vi.useFakeTimers(); document.title = 'Application';
+        vi.spyOn(window, 'print').mockImplementation(() => {
+            expect(document.querySelector('.mdx-print-header__title')).toBeNull();
+            expect(document.querySelector('.mdx-print-header__meta')?.textContent).toBe('Author');
+            expect(document.title).toBe(''); window.dispatchEvent(new Event('afterprint'));
+        });
+        const printing = new DefaultPrintService().printFromHtml('<p>Body</p>', {
+            fileName: '简历.mind', showFileName: false, showHeader: true, fontSize: 'normal', headerMeta: { author: 'Author' },
+        });
+        await vi.advanceTimersByTimeAsync(300); await printing;
+        expect(document.title).toBe('Application');
+    });
+
+    it('offers a checked file-name option and applies its selection to the printed page', async () => {
+        vi.useFakeTimers();
+        vi.spyOn(window, 'print').mockImplementation(() => {
+            expect(document.querySelector('.mdx-print-header')).toBeNull();
+            expect(document.querySelector('.mdx-print--no-header')).not.toBeNull();
+            window.dispatchEvent(new Event('afterprint'));
+        });
+        const printing = new DefaultPrintService().printFromHtml('<p>Body</p>', { fileName: '简历.mind', showHeader: true });
+        const toggle = document.querySelector<HTMLInputElement>('[data-show-file-name]')!;
+        expect(toggle.checked).toBe(true); toggle.click();
+        document.querySelector<HTMLButtonElement>('[data-size="normal"]')!.click();
+        await vi.advanceTimersByTimeAsync(300); await printing;
+        expect(window.print).toHaveBeenCalledOnce();
+    });
+
+    it('cancels printing from the localized options dialog', async () => {
+        const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+        const printing = new DefaultPrintService().printFromHtml('<p>Body</p>', { fileName: 'notes.md', showHeader: true, locale: 'en' });
+        expect(document.body.textContent).toContain('Show file name');
+        document.querySelector<HTMLButtonElement>('#mdx-print-cancel')!.click();
+        await printing;
+        expect(print).not.toHaveBeenCalled();
+        expect(document.querySelector('[data-show-file-name]')).toBeNull();
+    });
+
+    it('passes the editor file name to printing and preserves an explicit custom title', async () => {
+        const printFromHtml = vi.fn(async () => {});
+        const editor = Object.assign(Object.create(MDxEditor.prototype), {
+            config: { title: '简历.mind', documentPath: '/简历.mind' }, printService: { printFromHtml },
+            modeManager: { getMode: () => 'render', getRenderContainer: () => ({ innerHTML: '<p>Body</p>' }) },
+        });
+        await editor.print({ fontSize: 'normal' });
+        expect(printFromHtml).toHaveBeenLastCalledWith('<p>Body</p>', expect.objectContaining({ fileName: '简历.mind' }));
+        await editor.print({ title: 'Release 1.2', showFileName: false, fontSize: 'normal' });
+        expect(printFromHtml).toHaveBeenLastCalledWith('<p>Body</p>', expect.objectContaining({ title: 'Release 1.2', fileName: undefined, showFileName: false }));
+    });
+
     it.each([false, true])('waits for rename before printing (failure: %s)', async (fails) => {
         let finish!: () => void;
         const rename = vi.fn(() => new Promise<void>((resolve, reject) => {

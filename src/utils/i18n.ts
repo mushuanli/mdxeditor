@@ -1,4 +1,11 @@
 const zhCN: Record<string, string> = {
+    'print.options': '打印选项',
+    'print.showFileName': '显示文件名',
+    'print.fontSize': '字体大小',
+    'print.small': '小',
+    'print.normal': '中',
+    'print.large': '大',
+    'print.cancel': '取消',
     'editor.copyContent': '复制文件内容',
     'editor.copySuccess': '已复制到剪贴板',
     'editor.copyFailed': '复制失败，请检查剪贴板权限',
@@ -13,6 +20,13 @@ const zhCN: Record<string, string> = {
     'editor.largeDocument.sourceFirst': '文件较大，已先打开源码。需要预览时可手动切换阅读模式。',
 };
 const en: Record<string, string> = {
+    'print.options': 'Print options',
+    'print.showFileName': 'Show file name',
+    'print.fontSize': 'Font size',
+    'print.small': 'Small',
+    'print.normal': 'Medium',
+    'print.large': 'Large',
+    'print.cancel': 'Cancel',
     'editor.copyContent': 'Copy file contents',
     'editor.copySuccess': 'Copied to clipboard',
     'editor.copyFailed': 'Copy failed. Check clipboard permissions.',
