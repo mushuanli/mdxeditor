@@ -32,7 +32,7 @@ const bytes = await context.getAssets()?.read('image.png');
 const path = context.getDocumentPath();
 ```
 
-VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话打印位于 itookit 仓库的 `packages/mdx-adapter`。
+VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话打印位于 itookit 仓库的 `ui/mdx-adapter`。
 
 详情: [插件目录](./doc/plugin-catalog.md)
 
