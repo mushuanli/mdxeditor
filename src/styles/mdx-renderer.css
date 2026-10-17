@@ -9,7 +9,8 @@
     sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  color: #333;
+  color: var(--mdx-content-color, #333);
+  background-color: var(--mdx-content-background, transparent);
   max-width: 100%;
   word-wrap: break-word;
 
@@ -269,4 +270,11 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: normal;
+}
+
+.mdx-editor-container[data-mdx-scroll="host"] .mdx-editor-renderer > :last-child {
+  margin-bottom: var(--mdx-content-end-margin, 0);
+}
+.mdx-editor-container[data-mdx-scroll="host"] .mdx-streaming-block:last-child > :last-child {
+  margin-bottom: var(--mdx-content-end-margin, 0);
 }

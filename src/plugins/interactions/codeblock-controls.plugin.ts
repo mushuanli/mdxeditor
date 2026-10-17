@@ -1,3 +1,4 @@
+import { DisclosureState, assignDisclosureKeys } from '../../renderer/disclosure-state';
 /**
  * @file mdx/plugins/interactions/codeblock-controls.plugin.ts
  * @description 代码块控制插件 - 流式输出优化版
@@ -83,6 +84,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
   private cleanupFns: Array<() => void> = [];
   private buttonHandlers = new WeakMap<HTMLElement, () => void>();
   private currentRenderContainer: HTMLElement | null = null;
+  private disclosureState = new DisclosureState();
 
   constructor(options: CodeBlockControlsPluginOptions = {}) {
     this.options = {
@@ -301,11 +303,11 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     this.cleanupFns.push(() => trigger.removeEventListener('click', triggerHandler));
 
     // 初始化状态
-    const isExpanded = !this.options.defaultCollapsed;
+    const isExpanded = this.disclosureState.get(pre.dataset.mdxDisclosureKey!) ?? !this.options.defaultCollapsed;
     if (!isExpanded) {
       wrapper.classList.add(`${this.options.classPrefix}-wrapper--collapsed`);
     }
-    this._updateCollapseState(wrapper, button, pre, isExpanded);
+    this._updateCollapseState(wrapper, button, pre, isExpanded, false);
 
     return { button, trigger };
   }
@@ -317,8 +319,10 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     wrapper: HTMLElement,
     button: HTMLButtonElement,
     pre: HTMLPreElement,
-    isExpanded: boolean
+    isExpanded: boolean,
+    remember = true
   ): void {
+    if (remember) this.disclosureState.set(pre.dataset.mdxDisclosureKey!, isExpanded);
     button.innerHTML = isExpanded ? this.options.icons.collapse : this.options.icons.expand;
     button.title = isExpanded ? 'Collapse code' : 'Expand code';
     button.setAttribute('aria-expanded', String(isExpanded));
@@ -352,7 +356,10 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
    * 批量增强代码块
    */
   private _enhanceCodeBlocks(element: HTMLElement): void {
-    this.currentRenderContainer = element;
+    const root = element.closest<HTMLElement>('.mdx-editor-renderer') ?? element;
+    this.currentRenderContainer = root;
+    assignDisclosureKeys(root, 'pre', 'code', pre =>
+      `${pre.querySelector('code')?.className ?? ''}:${pre.textContent ?? ''}`);
 
     // 只处理未增强的代码块
     const pres = element.querySelectorAll<HTMLPreElement>('pre:not([data-enhanced])');
@@ -573,5 +580,6 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     this.cleanupFns.forEach(fn => fn());
     this.cleanupFns = [];
     this.currentRenderContainer = null;
+    this.disclosureState.clear();
   }
 }

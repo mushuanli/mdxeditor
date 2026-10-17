@@ -2,6 +2,8 @@ import { lexInWorker, needsWorker } from './worker-lexer';
 import { workerSyntax } from './worker-tokenizers';
 // @mdx/renderer/marked-adapter.ts
 import { Marked, Tokens } from 'marked';
+import type { HtmlPolicy } from '../editor/contracts';
+import { escapeHTML } from '../utils/html';
 import { slugify } from '../utils/markdown';
 
 /**
@@ -10,6 +12,7 @@ import { slugify } from '../utils/markdown';
  * 好处：marked 版本升级只影响此文件
  */
 export class MarkedAdapter {
+    constructor(private htmlPolicy: HtmlPolicy = 'allow') {}
     /**
      * 解析 Markdown 为 HTML
      */
@@ -37,12 +40,12 @@ export class MarkedAdapter {
     private configure(marked: Marked, extensions: any[], markedOptions?: any): void {
         // 标题渲染器：生成带 ID 的标题
         const renderer = {
-            heading(token: Tokens.Heading): string {
+            heading(this: any, token: Tokens.Heading): string {
                 const text = token.text;
                 const level = token.depth;
                 const cleanText = text.replace(/<[^>]*>/g, '');
                 const id = `heading-${slugify(cleanText)}`;
-                return `<h${level} id="${id}">${text}</h${level}>`;
+                return `<h${level} id="${id}">${this.parser.parseInline(token.tokens)}</h${level}>`;
             }
         };
 
@@ -54,6 +57,9 @@ export class MarkedAdapter {
 
         if (markedOptions) {
             marked.use(markedOptions);
+        }
+        if (this.htmlPolicy === 'literal') {
+            marked.use({ renderer: { html: token => escapeHTML(token.text) } });
         }
     }
 }

@@ -22,7 +22,13 @@ export interface EditorHost {
     renameDocument?(path: string, title: string): Promise<{ path: string; title: string }>;
     notify?(message: string, level: 'info' | 'success' | 'error'): void;
 }
+export type HtmlPolicy = 'allow' | 'literal';
+export type ScrollMode = 'editor' | 'host';
 export interface EditorOptions {
+    /** Host scrolling lets preview content grow naturally. Defaults to editor scrolling. */
+    scrollMode?: ScrollMode;
+    /** Literal mode displays authored HTML as text; plugin-generated markup is unchanged. */
+    htmlPolicy?: HtmlPolicy;
     signal?: AbortSignal;
     documentPath?: string;
     onDocumentPathChange?: (path: string) => void;

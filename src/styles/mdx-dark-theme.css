@@ -3,8 +3,8 @@
 /* 深色主题支持 */
 
 [data-theme="dark"] .mdx-editor-renderer {
-    color: #e1e4e8;
-    background-color: #0d1117;
+    color: var(--mdx-content-color, #e1e4e8);
+    background-color: var(--mdx-content-background, #0d1117);
   }
 [data-theme="dark"] .mdx-editor-renderer h1,
   [data-theme="dark"] .mdx-editor-renderer h2,
@@ -54,7 +54,7 @@
     background-color: transparent;
   }
 [data-theme="dark"] .mdx-editor-container__render-mode {
-    background-color: #0d1117;
+    background-color: var(--mdx-content-background, #0d1117);
   }
 /* 搜索高亮深色主题 */
 [data-theme="dark"] .mdx-editor-search-highlight mark {
@@ -67,8 +67,8 @@
 
 @media (prefers-color-scheme: dark) {
   :not([data-theme="light"]) .mdx-editor-renderer {
-    color: #e1e4e8;
-    background-color: #0d1117;
+    color: var(--mdx-content-color, #e1e4e8);
+    background-color: var(--mdx-content-background, #0d1117);
   }
   :not([data-theme="light"]) .mdx-editor-renderer h1,
   :not([data-theme="light"]) .mdx-editor-renderer h2,
@@ -118,7 +118,7 @@
     background-color: transparent;
   }
   :not([data-theme="light"]) .mdx-editor-container__render-mode {
-    background-color: #0d1117;
+    background-color: var(--mdx-content-background, #0d1117);
   }
   /* 搜索高亮深色主题 */
   :not([data-theme="light"]) .mdx-editor-search-highlight mark {

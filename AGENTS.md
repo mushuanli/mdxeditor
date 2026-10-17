@@ -38,6 +38,9 @@ VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话�
 
 ## Conventions
 
+- 嵌入布局使用公共 `scrollMode` 与 `--mdx-content-*` 变量；初始化保留挂载元素 class。普通文档默认行为不变。
+- `htmlPolicy` 只控制原始 HTML；插件内片段使用 `context.renderMarkdown` 继承外层解析规则。`afterRender` 支持异步转换。
+- 折叠状态通过通用 `data-mdx-disclosure-key` 在实例内存保留，核心不解释业务身份；系统/工具角色、摘要和配色属于宿主。
 - 流式更新使用 `StreamingDiffer` 而非整体替换
 - `ScopedPersistenceStore` — 插件私有持久化，由 `createStore()` 二级回退：注入的 `StoreFactory` → 内存（`MemoryStore`）
 - `AssetResolverPlugin` 通过 `AssetProvider` 读取资源；路径生成统一走 `services/asset-helper.ts`

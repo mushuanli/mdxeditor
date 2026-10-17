@@ -61,6 +61,8 @@ export interface TitleBarButtonConfig {
  */
 export interface PluginContext {
     readonly pluginManager: PluginManager;
+    /** Parse a fragment with the renderer's syntax extensions and HTML policy, without lifecycle hooks. */
+    renderMarkdown(markdown: string, options?: { markedOptions?: MarkedExtension; signal?: AbortSignal }): Promise<string>;
 
     // 语法扩展
     registerSyntaxExtension(ext: MarkedExtension): void;

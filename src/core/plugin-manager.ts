@@ -96,6 +96,7 @@ export class PluginManager {
 
     const context: PluginContext = {
       pluginManager: this,
+      renderMarkdown: (markdown, options) => this.coreInstance.renderMarkdown(markdown, options),
 
       // 语法扩展
       registerSyntaxExtension: (ext: MarkedExtension) => {

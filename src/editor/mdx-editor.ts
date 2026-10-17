@@ -60,6 +60,7 @@ export class MDxEditor implements IEditor {
         this.cmAdapter = new CodeMirrorAdapter();
         this.renderer = new MDxRenderer({
             signal: config.signal,
+            htmlPolicy: config.htmlPolicy,
             searchMarkClass: config.searchMarkClass,
             documentPath: config.documentPath,
             storeFactory: config.storeFactory,
@@ -354,7 +355,8 @@ export class MDxEditor implements IEditor {
 
     private createContainers(container: HTMLElement): void {
         container.innerHTML = '';
-        container.className = 'mdx-editor-root-container mdx-editor-container';
+        container.classList.add('mdx-editor-root-container', 'mdx-editor-container');
+        container.dataset.mdxScroll = this.config.scrollMode ?? 'editor';
         this.modeManager.createContainers(container);
         if (this.config.host?.openDocument) this.releaseDocumentLinks = bindDocumentLinks(
             this.modeManager.getRenderContainer()!, () => editorFilePath(this.config),
@@ -369,10 +371,9 @@ export class MDxEditor implements IEditor {
             renderContainer.replaceChildren(source); return;
         }
         if (renderContainer) {
-            renderContainer.textContent = this.config.translate?.('editor.preview.loading') ?? t('editor.preview.loading', this.config.locale);
             try { await this.renderer.render(renderContainer, this.getText()); }
             catch (error) {
-                if (error instanceof Error && error.name === 'AbortError') return;
+                if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return;
                 const notice = document.createElement('p'); notice.setAttribute('role', 'status');
                 notice.textContent = this.config.translate?.('editor.preview.unavailable') ?? t('editor.preview.unavailable', this.config.locale);
                 renderContainer.replaceChildren(notice);

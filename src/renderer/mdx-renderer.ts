@@ -5,9 +5,11 @@ import { SearchHighlighter } from './search-highlighter';
 import { MarkedAdapter } from './marked-adapter';
 import { StreamingDiffer } from './streaming-differ';
 import type { MDxPlugin } from '../core/types';
-import type { AssetProvider, StoreFactory } from '../editor/contracts';
+import { DisclosureState } from './disclosure-state';
+import type { AssetProvider, StoreFactory, HtmlPolicy } from '../editor/contracts';
 
 export interface MDxRendererConfig {
+  htmlPolicy?: HtmlPolicy;
   signal?: AbortSignal;
   searchMarkClass?: string;
   documentPath?: string;
@@ -40,6 +42,7 @@ export class MDxRenderer {
   private searchHighlighter: SearchHighlighter;
   private markedAdapter: MarkedAdapter;
   private renderRoot: HTMLElement | null = null;
+  private disclosures = new DisclosureState();
   public markedExtensions: any[] = [];
   public readonly instanceId: string;
 
@@ -56,7 +59,7 @@ export class MDxRenderer {
     this.instanceId = `renderer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     this.pluginManager = new PluginManager(this);
     this.searchHighlighter = new SearchHighlighter(config.searchMarkClass || 'mdx-editor-search-highlight');
-    this.markedAdapter = new MarkedAdapter();
+    this.markedAdapter = new MarkedAdapter(config.htmlPolicy);
     this.streamingDiffer = new StreamingDiffer();
 
     this.pluginManager.setContext(config.documentPath, config.assets, config.storeFactory);
@@ -66,6 +69,10 @@ export class MDxRenderer {
   usePlugin(plugin: MDxPlugin): this {
     this.pluginManager.register(plugin);
     return this;
+  }
+
+  renderMarkdown(markdown: string, options: RenderOptions = {}): Promise<string> {
+    return this.markedAdapter.parse(markdown, this.markedExtensions, options.markedOptions, options.signal);
   }
 
   setEditorInstance(editor: any): void {
@@ -109,15 +116,17 @@ export class MDxRenderer {
 
     const parseDone = performance.now();
     // 3. afterRender 钩子
-    const afterResult = this.pluginManager.executeTransformHook('afterRender', {
+    const afterResult = await this.pluginManager.executeTransformHookAsync('afterRender', {
       html,
-      options,
-    });
+      options: beforeResult.options,
+    }, signal);
 
     const transformDone = performance.now();
     // 4. 注入 DOM
     signal.throwIfAborted();
+    this.disclosures.capture(element);
     element.innerHTML = afterResult.html;
+    this.disclosures.restore(element);
 
     const domDone = performance.now();
     // 5. domUpdated 钩子
@@ -170,6 +179,7 @@ export class MDxRenderer {
       this.streamingDiffer.reset();
       this.blockWrappers = [];
       // 确保容器为空
+      this.disclosures.capture(element);
       element.innerHTML = '';
     }
 
@@ -180,6 +190,8 @@ export class MDxRenderer {
     const diff = this.streamingDiffer.diff(newBlocks);
 
     if (!diff.hasChanges) return;
+
+    this.disclosures.capture(element);
 
     // 3. 移除 diffIndex 及之后的 DOM 包装器
     while (this.blockWrappers.length > diff.diffIndex) {
@@ -208,10 +220,10 @@ export class MDxRenderer {
       );
 
       // afterRender 钩子
-      const afterResult = this.pluginManager.executeTransformHook('afterRender', {
+      const afterResult = await this.pluginManager.executeTransformHookAsync('afterRender', {
         html,
-        options: { streaming: true, blockIndex },
-      });
+        options: beforeResult.options,
+      }, signal);
 
       signal.throwIfAborted();
       // 创建包装器
@@ -223,9 +235,12 @@ export class MDxRenderer {
       }
       wrapper.innerHTML = afterResult.html;
 
+      // Capture interactions that occurred while parsing the next block.
+      this.disclosures.capture(element);
       // 添加到容器
       element.appendChild(wrapper);
       this.blockWrappers.push(wrapper);
+      this.disclosures.restore(element, wrapper);
 
       // 对新增的 DOM 执行插件增强
       await this.pluginManager.executeHookAsync('domUpdated', {
@@ -319,6 +334,7 @@ export class MDxRenderer {
       this.searchHighlighter.clear(this.renderRoot);
       this.renderRoot.classList.remove('mdx-editor-renderer');
     }
+    this.disclosures.clear();
     this.pluginManager.destroy();
     this.searchHighlighter.destroy();
     this.streamingDiffer.reset();

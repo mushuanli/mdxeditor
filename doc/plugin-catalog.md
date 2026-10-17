@@ -34,4 +34,8 @@ interface MDxPlugin {
 
 插件通过 `PluginContext.getAssets()`、`getDocumentPath()`、`getScopedStore()` 和 `notify()` 访问公共能力；使用 `registerCodeMirrorExtension` / `registerSyntaxExtension` 注册扩展。
 
+`context.renderMarkdown(markdown, options)` 解析内部片段，复用外层语法扩展与 HTML 策略，不执行生命周期钩子。异步 `afterRender` 钩子必须返回转换后的 `{ html, options }`，保留其他插件携带的 options。`FoldablePlugin` 使用此入口，避免内部解析绕过宿主的 `htmlPolicy`。
+
+插件生成 `<details data-mdx-disclosure-key="stable-key">` 可保留展开状态；同一渲染器内 key 须唯一。`FoldablePlugin` 使用 `data-mdx-disclosure` 自动生成基于摘要和出现次序的 key。代码块控件根据代码内容及出现次序生成 key，也支持宿主在 `pre` 上显式提供 `data-mdx-disclosure-key`。状态只在实例内存保留，销毁时清理。
+
 `MentionProvider`、`AutocompleteProvider` 和 `TagPluginOptions.getTags` 接收用户自己的查询实现。MindOS 的 VFS、附件管理和会话打印由 `@itookit/mdx-adapter` 接入，核心插件不导入内部业务包。

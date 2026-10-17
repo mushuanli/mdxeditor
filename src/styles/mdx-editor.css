@@ -23,7 +23,7 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  padding: 0.5rem 1rem 1rem 1rem; /* 顶部减少到 0.5rem */
+  padding: var(--mdx-content-padding, 0.5rem 1rem 1rem); /* 顶部减少到 0.5rem */
 }
 
 /* 隐藏状态 */
@@ -54,3 +54,10 @@
 .mdx-notification--error { border-inline-start: 3px solid #c33; }
 .mdx-notification--success { border-inline-start: 3px solid #393; }
 .mdx-notification--info { border-inline-start: 3px solid #369; }
+
+/* Public embedding contract: the host owns vertical scrolling in preview mode. */
+.mdx-editor-container[data-mdx-scroll="host"].is-render-mode,
+.mdx-editor-container[data-mdx-scroll="host"] > .mdx-editor-container__render-mode {
+  height: auto;
+  overflow: visible;
+}

@@ -27,6 +27,33 @@
   - 为挖空填词集成了**间隔重复系统 (SRS)**。
 - **💾 灵活集成**: 通过公开接口接入宿主的保存、附件与持久化服务；不依赖其他 `@itookit/*` 包。
 
+## 嵌入宿主界面
+
+编辑器保留挂载元素已有的 class。独立文档默认由编辑器滚动，原始 HTML 继续作为 HTML 渲染；宿主可以显式选择嵌入配置：
+
+```ts
+const editor = await createMDxEditor(mount, {
+  initialMode: 'render',
+  scrollMode: 'host',
+  htmlPolicy: 'literal',
+});
+```
+
+`scrollMode: 'host'` 使预览自然撑高，由宿主负责滚动；编辑模式保留编辑器滚动。以下公共 CSS 变量可设置在挂载元素或祖先上，明暗主题均生效：
+
+```css
+.embedded-content {
+  --mdx-content-background: transparent;
+  --mdx-content-color: currentColor;
+  --mdx-content-padding: 0;
+  --mdx-content-end-margin: 0;
+}
+```
+
+末尾留白变量用于宿主滚动模式。`htmlPolicy: 'literal'` 对正文、标题和折叠内容的原始 HTML 统一按字面显示，语法扩展生成的 HTML 继续渲染；直接创建 `MDxRenderer` 时也支持此选项。插件解析内部 Markdown 时使用 `context.renderMarkdown(text, options)`，继承外层语法扩展与 HTML 策略，不重复执行生命周期钩子；`afterRender` 钩子支持异步转换。
+
+插件生成的 `<details data-mdx-disclosure-key="host:stable-key">` 会在完整渲染、流式更新和流式结束时保留展开状态。key 在同一渲染器内须唯一，由宿主提供普通字符串，核心不解释其业务含义。`FoldablePlugin` 和代码块控件自动生成 key；相同内容通过出现次序区分，内容改变时需要显式 key 才能维持同一身份。状态只存在于实例内存，销毁时清理，不自动写入宿主存储。
+
 ## 📦 安装
 
 ```bash

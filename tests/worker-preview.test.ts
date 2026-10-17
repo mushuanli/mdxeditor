@@ -44,6 +44,17 @@ it('retains AST task offsets and excludes fenced examples after worker analysis'
     expect(TestWorker.instances).toHaveLength(1); plugin.destroy();
 });
 
+it('applies the literal HTML policy after worker tokenization too', async () => {
+    vi.stubGlobal('Worker', TestWorker);
+    const renderer = new MDxRenderer({ htmlPolicy: 'literal' }), element = document.createElement('div');
+    try {
+        await renderer.render(element, '# Heading <img src=x>\n\n<script>body</script>\n' + '\n'.repeat(33_000));
+        expect(TestWorker.instances).toHaveLength(1);
+        expect(element.querySelector('img, script')).toBeNull();
+        expect(element.textContent).toContain('<script>body</script>');
+    } finally { renderer.destroy(); }
+});
+
 it('terminates an obsolete render before a newer result reaches the DOM', async () => {
     class SlowWorker extends TestWorker { postMessage() {} }
     vi.stubGlobal('Worker', SlowWorker);
