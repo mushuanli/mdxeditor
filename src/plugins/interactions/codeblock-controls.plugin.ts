@@ -1,4 +1,5 @@
 import { DisclosureState, assignDisclosureKeys } from '../../renderer/disclosure-state';
+import { REVEAL_CONTENT_EVENT } from '../../renderer/reveal-content';
 /**
  * @file mdx/plugins/interactions/codeblock-controls.plugin.ts
  * @description 代码块控制插件 - 流式输出优化版
@@ -309,7 +310,18 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     }
     this._updateCollapseState(wrapper, button, pre, isExpanded, false);
 
+    this._bindReveal(wrapper, button, pre);
+
     return { button, trigger };
+  }
+
+  private _bindReveal(wrapper: HTMLElement, button: HTMLButtonElement, pre: HTMLPreElement): void {
+    const reveal = () => {
+      wrapper.classList.remove(`${this.options.classPrefix}-wrapper--collapsed`);
+      this._updateCollapseState(wrapper, button, pre, true);
+    };
+    pre.addEventListener(REVEAL_CONTENT_EVENT, reveal);
+    this.cleanupFns.push(() => pre.removeEventListener(REVEAL_CONTENT_EVENT, reveal));
   }
 
   /**

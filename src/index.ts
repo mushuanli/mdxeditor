@@ -12,6 +12,7 @@ export type { MDxEditorConfig } from './editor/mdx-editor';
 // === 渲染器 ===
 export { MDxRenderer } from './renderer/mdx-renderer';
 export type { MDxRendererConfig, RenderOptions } from './renderer/mdx-renderer';
+export { revealRenderedContent } from './renderer/reveal-content';
 
 // === 核心框架 ===
 export { PluginManager } from './core/plugin-manager';

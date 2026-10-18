@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createMDxEditor } from '../src/factory';
 import { MDxEditor } from '../src/editor/mdx-editor';
 import { MDxRenderer } from '../src/renderer/mdx-renderer';
+import { revealRenderedContent } from '../src/renderer/reveal-content';
 import { FoldablePlugin } from '../src/plugins/syntax-extensions/foldable.plugin';
 import { CodeBlockControlsPlugin } from '../src/plugins/interactions/codeblock-controls.plugin';
 import type { MDxPlugin } from '../src/core/types';
@@ -16,6 +17,25 @@ function setup(literal = false) {
 }
 const fold = '::> Notes\n    **Body**\n';
 const code = '```ts\nconst answer = 42;\nconsole.log(answer);\n```';
+
+it('reveals only target ancestors and preserves code disclosure state across rendering', async () => {
+    const { renderer, root } = setup();
+    renderer.usePlugin(new CodeBlockControlsPlugin({ classPrefix: 'custom-code', minLinesThreshold: 1 }));
+    const content = '<details data-mdx-disclosure-key="folded"><summary>Folded</summary>\n\n' + code + '\n\n</details>\n\n' + code;
+    await renderer.render(root, content);
+    const target = root.querySelector<HTMLElement>('code')!, codes = root.querySelectorAll('pre');
+    const details = root.querySelector<HTMLDetailsElement>('details')!;
+    revealRenderedContent(target, document.createElement('div'));
+    expect(details.open).toBe(false);
+    revealRenderedContent(target, root);
+    expect(details.open).toBe(true);
+    expect(codes[0].style.maxHeight).toBe('none');
+    expect(codes[1].style.maxHeight).not.toBe('none');
+    await renderer.render(root, content + '\n\nUpdated');
+    expect(root.querySelector<HTMLDetailsElement>('details')!.open).toBe(true);
+    expect(root.querySelectorAll('pre')[0].style.maxHeight).toBe('none');
+    expect(root.querySelectorAll('pre')[1].style.maxHeight).not.toBe('none');
+});
 
 it('preserves host classes and editor defaults while opting into host scrolling', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));

@@ -54,6 +54,8 @@ const editor = await createMDxEditor(mount, {
 
 插件生成的 `<details data-mdx-disclosure-key="host:stable-key">` 会在完整渲染、流式更新和流式结束时保留展开状态。key 在同一渲染器内须唯一，由宿主提供普通字符串，核心不解释其业务含义。`FoldablePlugin` 和代码块控件自动生成 key；相同内容通过出现次序区分，内容改变时需要显式 key 才能维持同一身份。状态只存在于实例内存，销毁时清理，不自动写入宿主存储。
 
+宿主搜索定位可调用 `revealRenderedContent(target, root)`：仅展开 root 内目标的祖先 details 和代码块，代码块状态继续由控件维护；函数不滚动页面，宿主应在调用后测量目标并滚动自己的视口。
+
 ## 📦 安装
 
 ```bash
