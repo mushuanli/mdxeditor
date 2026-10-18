@@ -21,6 +21,7 @@
   - 可配置的**工具栏**和**标题栏**，用于执行常用操作。
   - 交互式**任务列表** (`- [x] 任务`)，点击即可更改状态。
   - 高级的**代码块控件**，提供一键复制、下载和折叠功能。
+  - **HTML/CSS/JS 在线预览**：用 `html live` 运行独立示例，或用 `playground=名称` 组合多个代码块，点击后在隔离的 iframe 中运行。[语法与配置](./doc/plugin-catalog.md#htmlcssjs-在线预览)。
 - **✍️ 高级编辑体验**:
   - 强大的**自动完成**框架，支持标签 (`#`)、提及 (`@`) 等。
   - **源码同步**: 在渲染视图上按住 `Ctrl/Cmd` 并双击，可立即跳转到其源码位置。
@@ -193,6 +194,7 @@ const editor = await createMDxEditor(container, {
 | **Mermaid** | `mermaid` | 渲染 Mermaid 流程图、时序图等。 | **已启用**<br>按需加载本地 mermaid 依赖 | `theme`: 'default'\|'dark'等 |
 | **SVG** | `svg` | 将 ` ```svg ` 代码块直接渲染为内联 SVG 图片 (带安全过滤)。 | **已启用**<br>Sanitize: 开启 | `sanitize`: boolean (防XSS)<br>`containerClass`: string |
 | **Code Controls** | `codeblock-controls` | 代码块增强：复制、下载、折叠过长代码。 | **已启用**<br>折叠阈值: 250px | `enableCopy`: boolean<br>`enableCollapse`: boolean<br>`collapseThreshold`: number (高度阈值) |
+| **Playground** | `playground` | HTML/CSS/JS 单块或同名分组，在代码块原位置切换代码/预览；单行工具栏提供刷新和代码视图的原有图标操作。 | **已启用**<br>仅显式标记的代码块 | `height`: number (预览高度，默认 360px) |
 | **Task List** | `task-list` | 交互式任务列表 (`- [ ]`)，支持点击勾选并**回写 Markdown**。 | **已启用**<br>自动回写: 开启 | `autoUpdateMarkdown`: boolean (点击更新源码)<br>`checkboxSelector`: string |
 | **Cloze (Core)** | `cloze:cloze` | 挖空插件核心 (`--text--`)，支持点击显示/隐藏，支持 TTS 发音。 | **按需加载**<br>(需在 plugins 列表) | `className`: string<br>`audioIconClass`: string |
 | **Cloze UI** | `cloze:cloze-controls` | 挖空控制面板（全显/全隐/导航）。 | **按需加载** | `className`: string |

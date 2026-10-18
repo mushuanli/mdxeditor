@@ -78,6 +78,9 @@ export type { TablePluginOptions } from './plugins/interactions/table.plugin';
 export { CodeBlockControlsPlugin } from './plugins/interactions/codeblock-controls.plugin';
 export type { CodeBlockControlsPluginOptions } from './plugins/interactions/codeblock-controls.plugin';
 
+export { PlaygroundPlugin } from './plugins/interactions/playground.plugin';
+export type { PlaygroundPluginOptions } from './plugins/interactions/playground.plugin';
+
 export { ZoomPlugin } from './plugins/interactions/zoom.plugin';
 export type { ZoomPluginOptions } from './plugins/interactions/zoom.plugin';
 

@@ -84,6 +84,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
   private options: ResolvedOptions;
   private cleanupFns: Array<() => void> = [];
   private buttonHandlers = new WeakMap<HTMLElement, () => void>();
+  private collapseButtons = new WeakMap<HTMLPreElement, HTMLButtonElement>();
   private currentRenderContainer: HTMLElement | null = null;
   private disclosureState = new DisclosureState();
 
@@ -291,6 +292,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
       this._toggleCollapse(wrapper, btn, pre);
     }, pre);
     button.classList.add(`${this.options.classPrefix}-controls__button--collapse`);
+    this.collapseButtons.set(pre, button);
 
     // 创建底部展开触发区域
     const trigger = document.createElement('div');
@@ -427,9 +429,11 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     // 创建控制栏
     const controls = document.createElement('div');
     controls.className = `${this.options.classPrefix}-controls`;
+    controls.setAttribute('data-mdx-code-controls', '');
 
     const rightButtons = document.createElement('div');
     rightButtons.className = `${this.options.classPrefix}-controls__right`;
+    rightButtons.setAttribute('data-mdx-code-actions', '');
 
     // 添加功能按钮
     if (this.options.enableDownload) {
@@ -473,10 +477,8 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     let affectedCount = 0;
 
     wrappers.forEach(wrapper => {
-      const button = wrapper.querySelector<HTMLButtonElement>(
-        `.${this.options.classPrefix}-controls__button--collapse`
-      );
       const pre = wrapper.querySelector<HTMLPreElement>('pre');
+      const button = pre && this.collapseButtons.get(pre);
 
       if (button && pre) {
         wrapper.classList.add(`${this.options.classPrefix}-wrapper--collapsed`);
@@ -504,10 +506,8 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     let affectedCount = 0;
 
     wrappers.forEach(wrapper => {
-      const button = wrapper.querySelector<HTMLButtonElement>(
-        `.${this.options.classPrefix}-controls__button--collapse`
-      );
       const pre = wrapper.querySelector<HTMLPreElement>('pre');
+      const button = pre && this.collapseButtons.get(pre);
 
       if (button && pre) {
         wrapper.classList.remove(`${this.options.classPrefix}-wrapper--collapsed`);
@@ -592,6 +592,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     this.cleanupFns.forEach(fn => fn());
     this.cleanupFns = [];
     this.currentRenderContainer = null;
+    this.collapseButtons = new WeakMap();
     this.disclosureState.clear();
   }
 }

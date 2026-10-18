@@ -26,6 +26,7 @@ import { MemoryPlugin } from './plugins/cloze/memory.plugin';
 import { TablePlugin } from './plugins/interactions/table.plugin';
 import { TaskListPlugin } from './plugins/interactions/task-list.plugin';
 import { CodeBlockControlsPlugin } from './plugins/interactions/codeblock-controls.plugin';
+import { PlaygroundPlugin } from './plugins/interactions/playground.plugin';
 import { ZoomPlugin } from './plugins/interactions/zoom.plugin';
 import { ClipboardPlugin } from './plugins/interactions/clipboard.plugin';
 import { UploadPlugin } from './plugins/interactions/upload.plugin';
@@ -53,6 +54,7 @@ const PLUGIN_DEFINITIONS: Array<[string, new (...args: any[]) => MDxPlugin, { pr
   ['interaction:table',        TablePlugin,            { priority: 50 }],
   ['task-list',                TaskListPlugin,         { priority: 51 }],
   ['codeblock-controls',       CodeBlockControlsPlugin,{ priority: 52 }],
+  ['playground',               PlaygroundPlugin,       { priority: 57 }],
   ['autocomplete:tag',         TagPlugin,              { priority: 53 }],
   ['autocomplete:mention',     MentionPlugin,          { priority: 54 }],
   ['interaction:clipboard',    ClipboardPlugin,        { priority: 55 }],
@@ -101,6 +103,7 @@ const DEFAULT_PLUGINS: string[] = [
   'mermaid',
   'svg',
   'codeblock-controls',
+  'playground',
   'task-list',
   'interaction:zoom',
 ];
