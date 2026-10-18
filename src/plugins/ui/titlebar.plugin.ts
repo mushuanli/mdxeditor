@@ -13,6 +13,8 @@ import { copyText } from '../../utils/clipboard';
  * 标题栏插件配置选项
  */
 export interface CoreTitleBarPluginOptions {
+  /** Customize button presentation and release responsive listeners on teardown. */
+  presentButton?: (id: string, button: HTMLButtonElement) => (() => void) | void;
   /** Place secondary controls in the existing title bar's More menu. */
   overflowActions?: boolean;
   /** Mount generic host controls in the existing title bar and return their cleanup. */
@@ -64,6 +66,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
   private wrapButton: HTMLButtonElement | null = null;
   private editor: MDxEditor | null = null;
   private cleanupActions?: () => void;
+  private cleanupButtons: (() => void)[] = [];
 
   constructor(options: CoreTitleBarPluginOptions = {}) {
     this.options = options;
@@ -216,6 +219,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
     pluginManager: PluginManager
   }): void {
     const { editor, pluginManager } = payload;
+    this.cleanupButtons.splice(0).forEach(cleanup => cleanup());
     const container = editor.container;
     if (!container) return;
 
@@ -295,6 +299,9 @@ export class CoreTitleBarPlugin implements MDxPlugin {
       } else if (btnConfig.icon instanceof HTMLElement) {
         button.appendChild(btnConfig.icon.cloneNode(true));
       }
+
+      const cleanup = this.options.presentButton?.(btnConfig.id, button);
+      if (cleanup) this.cleanupButtons.push(cleanup);
 
       // Preserve a browser preview selection when the AI button is pressed.
       if (btnConfig.id === 'ai-action') button.onmousedown = event => {
@@ -390,6 +397,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
 
   destroy(): void {
     this.cleanupActions?.(); this.cleanupActions = undefined;
+    this.cleanupButtons.splice(0).forEach(cleanup => cleanup());
     this.cleanupFns.forEach(fn => fn());
     this.cleanupFns = [];
     this.toggleModeBtn = null;

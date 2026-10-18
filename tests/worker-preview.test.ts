@@ -104,3 +104,23 @@ it('does not commit stale streaming state after a delayed DOM hook', async () =>
     expect(updated).toHaveBeenCalledTimes(2);
     expect(element.textContent).toBe('Current'); renderer.destroy();
 });
+
+
+it.each(['line\n'.repeat(5001), 'x'.repeat(10_002), '中'.repeat(90_000)])('opens large Markdown in preview and allows manual editing (%#)', async content => {
+    vi.stubGlobal('Worker', TestWorker);
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+    const { defaultEditorFactory } = await import('../src/factory');
+    const mount = document.createElement('div'); document.body.append(mount);
+    const editor = await defaultEditorFactory(mount, { initialContent: content });
+    try {
+        expect(editor.getMode()).toBe('render');
+        expect(mount.querySelector('.mdx-editor-container__render-mode')!.textContent!.replace(/\s/g, '')).toContain(content.replace(/\s/g, ''));
+        expect(mount.querySelector('.mdx-source-notice')).toBeNull();
+        expect(editor.isDirty()).toBe(false);
+        expect(TestWorker.instances).toHaveLength(1);
+        await editor.switchToMode('edit');
+        expect(editor.getMode()).toBe('edit'); expect(editor.getText()).toBe(content);
+        await editor.switchToMode('render');
+        expect(editor.getMode()).toBe('render'); expect(editor.isDirty()).toBe(false);
+    } finally { await editor.destroy(); mount.remove(); }
+});

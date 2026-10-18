@@ -33,9 +33,9 @@ export function isLargeDocument(text: string): boolean { return largeDocumentRea
 export function documentProfile(options: EditorOptions, text: string): DocumentProfile {
     const format = documentFormat(options), largeReason = largeDocumentReason(text);
     return Object.freeze({ format, largeReason,
-        initialMode: format === 'text' || largeReason ? 'edit' : options.initialMode ?? 'edit',
+        initialMode: format === 'text' ? 'edit' : options.initialMode ?? 'edit',
         enableMarkdown: format === 'markdown' && !largeReason,
         enableLineWrapping: !largeReason,
-        showSourceNotice: format === 'markdown' && !!largeReason,
+        showSourceNotice: format === 'markdown' && !!largeReason && options.initialMode !== 'render',
     });
 }

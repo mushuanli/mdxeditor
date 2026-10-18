@@ -41,3 +41,5 @@ interface MDxPlugin {
 `MentionProvider`、`AutocompleteProvider` 和 `TagPluginOptions.getTags` 接收用户自己的查询实现。MindOS 的 VFS、附件管理和会话打印由 `@itookit/mdx-adapter` 接入，核心插件不导入内部业务包。
 
 `CoreTitleBarPluginOptions.mountActions` 向现有标题栏右侧挂载宿主通用控件，返回清理函数。`overflowActions: true` 将次要按钮收进原标题栏更多菜单；默认不启用，宿主可按产品需要配置。保留原按钮与回调，标题输入仍负责文件重命名，核心不实现窗口列表和项目导航。
+
+`presentButton(id, button)` 可在按钮创建时定制响应式图标和可访问名称，并返回销毁时释放监听的函数；它不替换核心按钮的异步点击处理管线。
