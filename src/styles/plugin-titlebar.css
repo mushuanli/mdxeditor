@@ -102,7 +102,6 @@
 .mdx-editor-titlebar__button i {
   width: 18px;
   height: 18px;
-  fill: currentColor;
 }
 
 /**
@@ -426,4 +425,25 @@
 .mdx-editor-titlebar__button[aria-pressed="true"] {
   border-color: currentColor;
   background-color: rgba(9, 105, 218, 0.12);
+}
+
+.mdx-editor-titlebar__host-actions { display: flex; align-items: center; }
+.mdx-editor-titlebar--compact, .mdx-editor-titlebar--compact .mdx-editor-titlebar__left, .mdx-editor-titlebar--compact .mdx-editor-titlebar__right { flex-wrap: nowrap; }
+.mdx-editor-titlebar--compact .mdx-editor-titlebar__left { flex: 1; }
+.mdx-editor-titlebar--compact .mdx-editor-titlebar__right { flex-shrink: 0; gap: 4px; }
+.mdx-editor-titlebar__menu > summary { display: grid; place-items: center; list-style: none; width: 36px; height: 36px; cursor: pointer; border-radius: 6px; }
+.mdx-editor-titlebar__menu > summary::-webkit-details-marker { display: none; }
+.mdx-editor-titlebar__menu > summary:focus-visible { outline: 2px solid var(--primary-color, #6366f1); outline-offset: -2px; }
+.mdx-editor-titlebar__menu-actions { position: fixed; z-index: 1000; display: grid; grid-template-columns: repeat(4, 44px); padding: 6px; border: 1px solid var(--mdx-border-color, #d0d7de); border-radius: 8px; background: var(--mdx-bg-color, #fff); color: inherit; box-shadow: 0 5px 20px #0002; }
+.mdx-editor-titlebar--compact .mdx-editor-titlebar__button svg, .mdx-editor-titlebar__menu > summary svg { width: 18px; height: 18px; }
+.mdx-editor-titlebar__menu-actions .mdx-editor-titlebar__button { width: 44px; height: 44px; padding: 8px; }
+@media (max-width: 768px) {
+  .mdx-editor-titlebar--compact { padding: 0 6px; gap: 4px; min-height: 44px; }
+  .mdx-editor-titlebar--compact .mdx-editor-titlebar__button, .mdx-editor-titlebar__menu > summary { min-width: 44px; width: 44px; height: 44px; padding: 8px; box-sizing: border-box; }
+  .mdx-editor-titlebar--compact .mdx-editor-titlebar__title { max-width: none; width: 100%; font-size: 14px; }
+}
+
+[data-theme="dark"] .mdx-editor-titlebar__menu-actions { background: var(--mdx-bg-color, #161b22); border-color: #30363d; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mdx-editor-titlebar__menu-actions { background: var(--mdx-bg-color, #161b22); border-color: #30363d; }
 }

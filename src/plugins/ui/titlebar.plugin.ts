@@ -2,6 +2,7 @@
  * @file mdx/plugins/ui/titlebar.plugin.ts
  */
 
+import {mountTitlebarActions} from './titlebar-actions';
 import type { MDxPlugin, PluginContext } from '../../core/types';
 import type { MDxEditor } from '../../editor/mdx-editor';
 import type { PluginManager } from '../../core/plugin-manager';
@@ -12,6 +13,10 @@ import { copyText } from '../../utils/clipboard';
  * 标题栏插件配置选项
  */
 export interface CoreTitleBarPluginOptions {
+  /** Place secondary controls in the existing title bar's More menu. */
+  overflowActions?: boolean;
+  /** Mount generic host controls in the existing title bar and return their cleanup. */
+  mountActions?: (container: HTMLElement) => (() => void) | void;
   /**
    * 是否启用编辑/阅读模式切换按钮
    * @default false
@@ -58,6 +63,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
   private currentTitle: string = '';
   private wrapButton: HTMLButtonElement | null = null;
   private editor: MDxEditor | null = null;
+  private cleanupActions?: () => void;
 
   constructor(options: CoreTitleBarPluginOptions = {}) {
     this.options = options;
@@ -129,7 +135,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
       context.registerTitleBarButton?.({
         id: 'toggle-sidebar',
         title: '切换侧边栏',
-        icon: '<i class="fas fa-bars"></i>',
+        icon: ACTION_ICONS.sidebar,
         location: 'left',
         onClick: () => this.options.onSidebarToggle?.(editor),
       });
@@ -145,7 +151,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
       context.registerTitleBarButton?.({
         id: 'toggle-edit-mode',
         title: '切换到阅读模式',
-        icon: '<i class="fas fa-book-open"></i>',
+        icon: ACTION_ICONS.read,
         command: 'toggleEditMode',
         location: 'left',
       });
@@ -184,7 +190,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
       context.registerTitleBarButton?.({
         id: 'save-action',
         title: '保存',
-        icon: '<i class="fas fa-save"></i>',
+        icon: ACTION_ICONS.save,
         command: 'triggerSave',
         location: 'right',
       });
@@ -196,7 +202,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
     context.registerTitleBarButton?.({
       id: 'print-action',
       title: '打印',
-      icon: '<i class="fas fa-print"></i>',
+      icon: ACTION_ICONS.print,
       command: 'handlePrintAction',
       location: 'right',
     });
@@ -221,6 +227,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
     }
 
     const leftGroup = document.createElement('div');
+    titleBar.classList.toggle('mdx-editor-titlebar--compact', !!this.options.overflowActions);
     leftGroup.className = 'mdx-editor-titlebar__left';
 
     const titleContainer = document.createElement('div');
@@ -311,7 +318,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
       };
 
       // 添加到对应的 Fragment
-      if (btnConfig.location === 'right') {
+      if (btnConfig.location === 'right' || this.options.overflowActions && !['toggle-sidebar', 'toggle-edit-mode'].includes(btnConfig.id)) {
         rightFragment.appendChild(button);
       } else {
         leftFragment.appendChild(button);
@@ -329,7 +336,9 @@ export class CoreTitleBarPlugin implements MDxPlugin {
     // 一次性添加所有按钮
     leftGroup.appendChild(leftFragment);
     leftGroup.appendChild(titleContainer);
-    rightGroup.appendChild(rightFragment);
+    this.cleanupActions?.();
+    this.cleanupActions = mountTitlebarActions(rightGroup, rightFragment, {overflow: this.options.overflowActions,
+      label: this.translate('editor.moreActions'), mount: this.options.mountActions});
 
     // 清空并重建标题栏
     titleBar.innerHTML = '';
@@ -359,10 +368,10 @@ export class CoreTitleBarPlugin implements MDxPlugin {
 
     if (mode === 'edit') {
       this.toggleModeBtn.title = '切换到阅读模式';
-      this.toggleModeBtn.innerHTML = '<i class="fas fa-book-open"></i>';
+      this.toggleModeBtn.innerHTML = ACTION_ICONS.read;
     } else {
       this.toggleModeBtn.title = '切换到编辑模式';
-      this.toggleModeBtn.innerHTML = '<i class="fas fa-edit"></i>';
+      this.toggleModeBtn.innerHTML = ACTION_ICONS.edit;
     }
     this.toggleModeBtn.setAttribute('aria-label', this.toggleModeBtn.title);
   }
@@ -380,6 +389,7 @@ export class CoreTitleBarPlugin implements MDxPlugin {
   }
 
   destroy(): void {
+    this.cleanupActions?.(); this.cleanupActions = undefined;
     this.cleanupFns.forEach(fn => fn());
     this.cleanupFns = [];
     this.toggleModeBtn = null;

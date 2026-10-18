@@ -48,3 +48,5 @@ VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话�
 - Mermaid 默认使用本地依赖且只在出现 `language-mermaid` 块时动态加载；Tauri 构建把其依赖放入独立 `mermaid-runtime` chunk。MathJax 只在渲染结果含 `\\(`/`\\[` 时加载。普通 Markdown 更新不得触发这两个运行时。
 
 运行: `pnpm typecheck` / `pnpm test` / `pnpm build`
+
+- core:titlebar.mountActions 提供通用宿主按钮插槽并执行其清理函数；overflowActions 将原次要按钮移到同一标题栏更多菜单，不重建按钮或改变保存、重命名和模式切换行为。核心不定义项目、窗口列表或侧栏导航状态。
