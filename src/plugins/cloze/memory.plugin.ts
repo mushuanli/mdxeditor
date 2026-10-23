@@ -82,7 +82,7 @@ export class MemoryPlugin implements MDxPlugin {
 
   private log(_message: string, ..._args: unknown[]) {
     if (this.options.debug) {
-      //console.log(`🧠 [MemoryPlugin] ${message}`, ...args);
+      //console.log(`🔮 [MemoryPlugin] ${message}`, ...args);
     }
   }
 
