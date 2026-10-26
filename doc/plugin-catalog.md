@@ -100,3 +100,7 @@ document.querySelector('#hello').onclick = () => {
 CSP 限制外部脚本、样式、图片和网络请求，只允许内联代码及指定的 data/blob 资源，因此 CDN、相对路径附件和远程 API 默认不可用。
 这不是进程级隔离或 CPU 限额，不适合运行恶意代码。宿主 CSP 仍可能进一步限制内联脚本；Tauri/WebView 宿主需按实际策略验证。
 `htmlPolicy` 继续只控制 Markdown 中的原始 HTML；显式标记的代码块由此插件提供隔离运行能力，宿主若不需要执行功能可禁用 `playground`。
+
+### AI Chat（按需启用）
+
+`interaction:ai-chat` / `AiChatPlugin` 将 `::@ 默认提示词` 渲染为 agent/flow 选择、提示词、附件和发送输入行。宿主提供 `AiChatHost`，负责创建 branch 与执行；详见 [接口与集成约定](./ai-chat.md)。

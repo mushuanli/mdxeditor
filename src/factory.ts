@@ -36,8 +36,11 @@ import { MentionPlugin } from './plugins/autocomplete/mention.plugin';
 import { AssetResolverPlugin } from './plugins/core/asset-resolver.plugin';
 import { AutoSavePlugin } from './plugins/interactions/auto-save.plugin';
 
+import { AiChatPlugin } from './plugins/interactions/ai-chat.plugin';
+
 // 批量注册
 const PLUGIN_DEFINITIONS: Array<[string, new (...args: any[]) => MDxPlugin, { priority?: number; dependencies?: string[] }]> = [
+  ['interaction:ai-chat',       AiChatPlugin,          { priority: 58 }],
   ['editor:core',              CoreEditorPlugin,      { priority: 1 }],
   ['core:titlebar',            CoreTitleBarPlugin,     { priority: 2 }],
   ['ui:toolbar',               ToolbarPlugin,          { priority: 2 }],

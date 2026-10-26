@@ -110,3 +110,6 @@ export { CoreTitleBarPlugin } from "./plugins/ui/titlebar.plugin";
 export type { CoreTitleBarPluginOptions } from "./plugins/ui/titlebar.plugin";
 export { AssetResolverPlugin } from "./plugins/core/asset-resolver.plugin";
 export type { AssetConfigOptions } from "./services/asset-helper";
+
+export { AiChatPlugin } from './plugins/interactions/ai-chat.plugin';
+export type { AiChatTarget, AiChatAttachment, AiChatSource, AiChatSubmitRequest, AiChatSubmitResult, AiChatHost, AiChatPluginOptions } from './plugins/interactions/ai-chat.contracts';

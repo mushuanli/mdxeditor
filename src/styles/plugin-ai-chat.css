@@ -1,0 +1,33 @@
+.mdx-ai-chat {
+  --mdx-ai-border: #d1d5db;
+  --mdx-ai-background: #f9fafb;
+  --mdx-ai-color: #1f2937;
+  margin: .75rem 0;
+  padding: .5rem;
+  border: 1px solid var(--mdx-ai-border);
+  border-radius: .5rem;
+  background: var(--mdx-ai-background);
+  color: var(--mdx-ai-color);
+}
+.mdx-ai-chat__form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.mdx-ai-chat input, .mdx-ai-chat select, .mdx-ai-chat button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--mdx-ai-border);
+  border-radius: .25rem;
+  padding: .25rem .5rem;
+  max-width: 100%;
+}
+.mdx-ai-chat__prompt { flex: 1; min-width: 8rem; }
+.mdx-ai-chat button { cursor: pointer; }
+.mdx-ai-chat button:disabled { opacity: .5; cursor: default; }
+.mdx-ai-chat__attachments { display: flex; flex-wrap: wrap; gap: .25rem; }
+.mdx-ai-chat__attachments:empty { display: none; }
+.mdx-ai-chat__status { flex-basis: 100%; font-size: .85em; overflow-wrap: anywhere; }
+.mdx-ai-chat__status:empty { display: none; }
+[data-theme="dark"] .mdx-ai-chat { --mdx-ai-border: #4b5563; --mdx-ai-background: #1f2937; --mdx-ai-color: #e5e7eb; }
+@media (prefers-color-scheme: dark) {
+  .mdx-ai-chat { --mdx-ai-border: #4b5563; --mdx-ai-background: #1f2937; --mdx-ai-color: #e5e7eb; }
+}
+@media print { .mdx-ai-chat button, .mdx-ai-chat select { display: none; } }
