@@ -1,7 +1,7 @@
 # AI Chat 输入插件
 
 `AiChatPlugin` 按需启用。预览模式将独立行 `::@ 默认提示词` 显示为
-`[agent / flow 选择] [默认提示词输入框] [+ 附件] [发送]`。
+`[当前 Agent 文字按钮] [默认提示词输入框] [+ 附件] [发送]`。点击 Agent 名称展开候选列表，选择后自动收起；键盘 Enter/Space 可展开，Escape 收起。
 `::@` 可不带默认提示词；代码围栏和行内文字中的标记不触发。
 编辑模式保留 Markdown 源码，输入框草稿不回写文档。
 
@@ -33,7 +33,9 @@ editor.use(new AiChatPlugin({ host,
 
 同一次草稿修订及其失败重试保留 `operationId`；修改提示词、目标或附件后，下次提交分配新 ID。成功后再次发送是新操作。宿主应持久记录该 ID，上传、创建 branch 和启动执行都沿原 ID 核对，不能因回调重试改为新的执行身份。
 
+- `getDefaultTarget?({ source, signal })`：返回宿主当前目标的 `{kind, id}`，例如当前 Session 的 Agent；ID 必须与候选目录一致。显式 `defaultTarget` 优先，其次宿主偏好，再回退 `agent/default`、首个 Agent、首个目标。选择后的草稿不会被默认偏好覆盖。
 - `listTargets({ source, signal })`：返回 agent/flow 列表，标识由宿主解释。每个输入行初次挂载时加载。
+- 粘贴图片或文件会加入当前输入行附件，发送前可移除；纯文本保留浏览器正常粘贴行为。与文件选择一样，粘贴不自动上传，失败保留附件。
 - `pickAttachments?({ source, attachments, signal })`：返回本次新增的附件；返回空列表表示取消。未提供时打开本地多文件选择器。
 - `onSubmit(request)`：宿主接受请求、创建 branch 并启动执行后 resolve；失败 reject。插件提交期间禁用输入，拒绝重复提交；失败保留提示词与附件，成功清空附件并保留提示词。
 - `AiChatAttachment`：本地 `{ kind: 'file', file: File }` 或宿主已有资源 `{ kind: 'reference', id, name, mimeType? }`。选择附件不自动上传；上传、权限、大小限制和资源生命周期由宿主负责。

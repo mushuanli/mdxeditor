@@ -82,3 +82,44 @@ it('registers the same grammar for worker parsing', () => {
   expect(workerSyntax([lexicalExtension('mdxAiChat')])).toEqual(['mdxAiChat']);
   expect(builtinTokenizer('mdxAiChat')('::@ hello\nnext')).toMatchObject({ prompt: 'hello', raw: '::@ hello\n' });
 });
+
+it('shows the current target as clickable text, selects another target and keeps its draft', async () => {
+  const current = {kind: 'agent' as const, id: 'current', label: 'Current agent'};
+  const {renderer, root, onSubmit} = setup({listTargets: () => [target, current],
+    getDefaultTarget: () => ({kind: 'agent', id: 'current'})});
+  await renderer.render(root, '::@ ask');
+  const picker = root.querySelector<HTMLDetailsElement>('.mdx-ai-chat__target-picker')!;
+  expect(root.querySelector('select')).toBeNull();
+  expect(picker.querySelector('summary')!.textContent).toBe('Current agent');
+  expect(picker.open).toBe(false);
+  picker.open = true;
+  picker.querySelector<HTMLButtonElement>('button')!.click();
+  expect(picker.querySelector('summary')!.textContent).toBe('Review');
+  expect(picker.open).toBe(false); expect(input(root).value).toBe('ask');
+  submit(root); expect(onSubmit.mock.calls[0][0].target).toEqual(target);
+});
+
+it('uses default instead of the first flow when no host preference exists', async () => {
+  const agent = {kind: 'agent' as const, id: 'default', label: 'Default'};
+  const {renderer, root, onSubmit} = setup({listTargets: () => [target, agent]});
+  await renderer.render(root, '::@ ask'); submit(root);
+  expect(onSubmit.mock.calls[0][0].target).toEqual(agent);
+});
+
+it('accepts pasted images once, retains them on failed submission and leaves text paste native', async () => {
+  const onSubmit = vi.fn().mockRejectedValue(new Error('offline'));
+  const {renderer, root} = setup({onSubmit}); await renderer.render(root, '::@ ask');
+  const file = new File(['image'], 'clipboard.png', {type: 'image/png'});
+  const paste = new Event('paste', {bubbles: true, cancelable: true});
+  Object.defineProperty(paste, 'clipboardData', {value: {files: [file], items: [{kind: 'file', getAsFile: () => file}]}});
+  input(root).dispatchEvent(paste); expect(paste.defaultPrevented).toBe(true);
+  expect(root.textContent).toContain('clipboard.png'); submit(root);
+  expect(onSubmit.mock.calls[0][0].attachments).toEqual([{kind: 'file', file}]);
+  await vi.waitFor(() => expect(root.textContent).toContain('offline'));
+  expect(root.textContent).toContain('clipboard.png');
+  const text = new Event('paste', {bubbles: true, cancelable: true});
+  Object.defineProperty(text, 'clipboardData', {value: {files: [], items: [{kind: 'string'}]}});
+  input(root).dispatchEvent(text); expect(text.defaultPrevented).toBe(false);
+  root.querySelector<HTMLButtonElement>('[aria-label="移除附件 clipboard.png"]')!.click();
+  expect(root.textContent).not.toContain('clipboard.png');
+});

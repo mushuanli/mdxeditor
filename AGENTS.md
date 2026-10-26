@@ -50,3 +50,5 @@ VFS、Session/namespace 校验、文件后缀判断、附件管理 UI 和会话�
 运行: `pnpm typecheck` / `pnpm test` / `pnpm build`
 
 - core:titlebar.mountActions 提供通用宿主按钮插槽并执行其清理函数；overflowActions 将原次要按钮移到同一标题栏更多菜单，不重建按钮或改变保存、重命名和模式切换行为。核心不定义项目、窗口列表或侧栏导航状态。
+
+- AiChatPlugin 的目标以文字入口展示；宿主可通过 AiChatHost.getDefaultTarget 注入默认目标。剪贴板文件/图片在输入行内保留为本地附件，发送回调负责上传与接纳；核心不推断 Session 身份或过滤业务 Flow。

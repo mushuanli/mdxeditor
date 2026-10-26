@@ -32,6 +32,9 @@ export interface AiChatSubmitResult {
 }
 
 export interface AiChatHost {
+  /** Host preference, e.g. the current Session agent. IDs use the same opaque values as listTargets. */
+  getDefaultTarget?(context: {source: AiChatSource; signal: AbortSignal}):
+    {kind: AiChatTarget['kind']; id: string} | undefined | Promise<{kind: AiChatTarget['kind']; id: string} | undefined>;
   listTargets(context: { source: AiChatSource; signal: AbortSignal }):
     readonly AiChatTarget[] | Promise<readonly AiChatTarget[]>;
   /** Resolve when the host has accepted the request and created/started its branch.

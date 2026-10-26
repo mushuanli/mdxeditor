@@ -64,11 +64,16 @@ export class AiChatPlugin implements MDxPlugin {
   private async loadTargets(draft: Draft, source: AiChatSource): Promise<void> {
     const signal = this.lifetime.signal;
     try {
-      const targets = await this.options.host.listTargets({ source, signal });
+      const [targets, preferred] = await Promise.all([
+        this.options.host.listTargets({ source, signal }),
+        this.options.host.getDefaultTarget?.({ source, signal }),
+      ]);
       if (signal.aborted) return;
       draft.targets = targets;
-      draft.target = targets.find(target => target.id === this.options.defaultTarget?.id
-        && target.kind === this.options.defaultTarget.kind) ?? targets[0];
+      const preference = this.options.defaultTarget ?? preferred;
+      draft.target = targets.find(target => target.id === preference?.id && target.kind === preference.kind)
+        ?? targets.find(target => target.kind === 'agent' && target.id === 'default')
+        ?? targets.find(target => target.kind === 'agent') ?? targets[0];
       if (!draft.target) draft.status = '没有可用的 agent / flow';
     } catch (error) {
       if (!signal.aborted) draft.status = this.errorMessage(error);
@@ -80,7 +85,10 @@ export class AiChatPlugin implements MDxPlugin {
   private mount(panel: HTMLElement, draft: Draft, source: AiChatSource): void {
     const signal = this.lifetime.signal;
     panel.innerHTML = `<form class="mdx-ai-chat__form">
-      <select aria-label="选择 agent 或 flow"></select>
+      <details class="mdx-ai-chat__target-picker">
+        <summary class="mdx-ai-chat__target" aria-label="选择 agent 或 flow" aria-disabled="true"></summary>
+        <div class="mdx-ai-chat__targets" role="group" aria-label="可用的 agent 和 flow"></div>
+      </details>
       <input class="mdx-ai-chat__prompt" aria-label="AI 提示词" placeholder="输入提示词">
       <button type="button" class="mdx-ai-chat__attach" aria-label="添加附件">+</button>
       <button type="submit" aria-label="发送">➤</button>
@@ -89,7 +97,9 @@ export class AiChatPlugin implements MDxPlugin {
       <span class="mdx-ai-chat__status" role="status" aria-live="polite"></span>
     </form>`;
     const form = panel.querySelector('form')!;
-    const select = panel.querySelector('select')!;
+    const picker = panel.querySelector<HTMLDetailsElement>('.mdx-ai-chat__target-picker')!;
+    const trigger = picker.querySelector<HTMLElement>('summary')!;
+    const choices = panel.querySelector<HTMLElement>('.mdx-ai-chat__targets')!;
     const input = panel.querySelector<HTMLInputElement>('.mdx-ai-chat__prompt')!;
     const attach = panel.querySelector<HTMLButtonElement>('.mdx-ai-chat__attach')!;
     const send = panel.querySelector<HTMLButtonElement>('[type="submit"]')!;
@@ -99,14 +109,23 @@ export class AiChatPlugin implements MDxPlugin {
     input.value = draft.prompt;
 
     const refresh = () => {
-      select.replaceChildren(...draft.targets.map((target, index) => {
-        const option = document.createElement('option');
-        option.value = String(index);
-        option.textContent = `${target.kind}: ${target.label}`;
-        option.selected = target === draft.target;
+      trigger.textContent = draft.target?.label ?? (draft.loading ? '选择…' : '选择 agent / flow');
+      trigger.title = draft.target ? `${draft.target.kind}: ${draft.target.label}` : '选择 agent 或 flow';
+      trigger.setAttribute('aria-disabled', String(draft.busy || draft.loading));
+      if (draft.busy || draft.loading) picker.open = false;
+      choices.replaceChildren(...draft.targets.map(target => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.textContent = `${target.kind === 'flow' ? 'Flow · ' : ''}${target.label}`;
+        option.setAttribute('aria-pressed', String(target === draft.target));
+        option.disabled = draft.busy || draft.loading;
+        option.onclick = () => {
+          if (signal.aborted || draft.busy || draft.loading) return;
+          if (draft.target !== target) {draft.target = target; draft.revision++;}
+          picker.open = false; refresh(); trigger.focus();
+        };
         return option;
       }));
-      select.disabled = draft.busy || draft.loading;
       input.disabled = attach.disabled = draft.busy;
       send.disabled = draft.busy || draft.loading || !draft.target || !draft.prompt.trim();
       form.setAttribute('aria-busy', String(draft.busy));
@@ -124,8 +143,18 @@ export class AiChatPlugin implements MDxPlugin {
     };
     draft.refresh = refresh;
     input.oninput = () => { if (draft.prompt !== input.value) {draft.prompt = input.value; draft.revision++;} refresh(); };
-    select.onchange = () => { const target = draft.targets[Number(select.value)];
-      if (draft.target !== target) {draft.target = target; draft.revision++;} };
+    trigger.onclick = event => {if (draft.busy || draft.loading || signal.aborted) event.preventDefault();};
+    picker.onkeydown = event => {if (event.key === 'Escape') {picker.open = false; trigger.focus();}};
+    form.addEventListener('paste', event => {
+      if (draft.busy || signal.aborted || !event.clipboardData) return;
+      const files = Array.from(event.clipboardData.files);
+      const pasted = files.length ? files : Array.from(event.clipboardData.items)
+        .filter(item => item.kind === 'file').map(item => item.getAsFile()).filter((file): file is File => !!file);
+      if (!pasted.length) return;
+      event.preventDefault();
+      draft.attachments.push(...pasted.map(file => ({kind: 'file' as const, file})));
+      draft.revision++; refresh();
+    });
     files.onchange = () => {
       const selected = Array.from(files.files ?? []);
       if (selected.length) {draft.attachments.push(...selected.map(file => ({ kind: 'file' as const, file }))); draft.revision++;}
