@@ -18,6 +18,12 @@ function setup(overrides: Partial<AiChatHost> = {}) {
   return { renderer, root, onSubmit };
 }
 const input = (root: HTMLElement) => root.querySelector<HTMLInputElement>('.mdx-ai-chat__prompt')!;
+
+async function activate(root: HTMLElement) {
+  root.querySelector('textarea')!.dispatchEvent(new Event('focusin', {bubbles: true}));
+  await vi.waitFor(() => expect(root.querySelector('form')!.getAttribute('aria-busy')).toBe('false'));
+}
+
 function submit(root: HTMLElement) { root.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true })); }
 
 it('recognizes a standalone marker and escapes the default prompt, excluding fences and inline text', async () => {
@@ -56,11 +62,12 @@ it('retains independent drafts across streaming updates and aborts host work on 
   const listTargets = vi.fn().mockResolvedValue([target]);
   const { renderer, root, onSubmit } = setup({ listTargets });
   await renderer.renderStreaming(root, '::@ first\n\n::@ second');
+  await activate(root);
   input(root).value = 'draft'; input(root).dispatchEvent(new Event('input'));
   await renderer.renderStreaming(root, '::@ first\n\n::@ second\n\nmore');
   expect(input(root).value).toBe('draft');
   expect(root.querySelectorAll('form')).toHaveLength(2);
-  expect(listTargets).toHaveBeenCalledTimes(2);
+  expect(listTargets).toHaveBeenCalledTimes(1);
   submit(root);
   const signal = onSubmit.mock.calls[0][0].signal;
   renderer.destroy();
@@ -70,11 +77,11 @@ it('retains independent drafts across streaming updates and aborts host work on 
 it('handles target errors, empty targets and empty prompts without sending', async () => {
   const { renderer, root, onSubmit } = setup({ listTargets: async () => [] });
   await renderer.render(root, '::@');
-  submit(root);
+  await activate(root); submit(root);
   expect(onSubmit).not.toHaveBeenCalled();
   expect(root.textContent).toContain('没有可用');
   const failed = setup({ listTargets: async () => { throw new Error('offline'); } });
-  await failed.renderer.render(failed.root, '::@ hi');
+  await failed.renderer.render(failed.root, '::@ hi'); await activate(failed.root);
   expect(failed.root.textContent).toContain('offline');
 });
 
@@ -87,7 +94,7 @@ it('shows the current target as clickable text, selects another target and keeps
   const current = {kind: 'agent' as const, id: 'current', label: 'Current agent'};
   const {renderer, root, onSubmit} = setup({listTargets: () => [target, current],
     getDefaultTarget: () => ({kind: 'agent', id: 'current'})});
-  await renderer.render(root, '::@ ask');
+  await renderer.render(root, '::@ ask'); await activate(root);
   const picker = root.querySelector<HTMLDetailsElement>('.mdx-ai-chat__target-picker')!;
   expect(root.querySelector('select')).toBeNull();
   expect(picker.querySelector('summary')!.textContent).toBe('Current agent');
@@ -102,13 +109,13 @@ it('shows the current target as clickable text, selects another target and keeps
 it('uses default instead of the first flow when no host preference exists', async () => {
   const agent = {kind: 'agent' as const, id: 'default', label: 'Default'};
   const {renderer, root, onSubmit} = setup({listTargets: () => [target, agent]});
-  await renderer.render(root, '::@ ask'); submit(root);
+  await renderer.render(root, '::@ ask'); await activate(root); submit(root);
   expect(onSubmit.mock.calls[0][0].target).toEqual(agent);
 });
 
 it('accepts pasted images once, retains them on failed submission and leaves text paste native', async () => {
   const onSubmit = vi.fn().mockRejectedValue(new Error('offline'));
-  const {renderer, root} = setup({onSubmit}); await renderer.render(root, '::@ ask');
+  const {renderer, root} = setup({onSubmit}); await renderer.render(root, '::@ ask'); await activate(root);
   const file = new File(['image'], 'clipboard.png', {type: 'image/png'});
   const paste = new Event('paste', {bubbles: true, cancelable: true});
   Object.defineProperty(paste, 'clipboardData', {value: {files: [file], items: [{kind: 'file', getAsFile: () => file}]}});

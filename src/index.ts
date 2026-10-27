@@ -112,4 +112,6 @@ export { AssetResolverPlugin } from "./plugins/core/asset-resolver.plugin";
 export type { AssetConfigOptions } from "./services/asset-helper";
 
 export { AiChatPlugin } from './plugins/interactions/ai-chat.plugin';
-export type { AiChatTarget, AiChatAttachment, AiChatSource, AiChatSubmitRequest, AiChatSubmitResult, AiChatHost, AiChatPluginOptions } from './plugins/interactions/ai-chat.contracts';
+export type { AiChatAnchorContext, AiChatAnchorState, AiChatCreateAnchorRequest, AiChatTarget, AiChatAttachment, AiChatSource, AiChatSubmitRequest, AiChatSubmitResult, AiChatHost, AiChatPluginOptions } from './plugins/interactions/ai-chat.contracts';
+
+export { aiChatAnchorIds } from './plugins/interactions/ai-chat-markers';

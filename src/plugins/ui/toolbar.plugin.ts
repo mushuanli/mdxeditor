@@ -69,6 +69,7 @@ export class ToolbarPlugin implements MDxPlugin {
     this.toolbarElement = toolbarContainer;
 
     const buttons = pluginManager.getToolbarButtons();
+    toolbarContainer.classList.toggle(`${this.options.className}--render-actions`, !editor.config.readOnly && buttons.some(button => button.type !== 'separator' && button.modes?.includes('render')));
 
     toolbarContainer.innerHTML = '';
 
@@ -124,6 +125,7 @@ export class ToolbarPlugin implements MDxPlugin {
 
     const button = document.createElement('button');
     button.type = 'button';
+    button.dataset.buttonModes = (config.modes ?? ['edit']).join(' ');
     button.className = `${this.options.className}__button`;
     button.title = config.title || config.id;
     button.setAttribute('data-button-id', config.id);

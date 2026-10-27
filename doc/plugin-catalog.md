@@ -103,4 +103,4 @@ CSP 限制外部脚本、样式、图片和网络请求，只允许内联代码�
 
 ### AI Chat（按需启用）
 
-`interaction:ai-chat` / `AiChatPlugin` 将 `::@ 默认提示词` 渲染为 agent/flow 选择、提示词、附件和发送输入行。宿主提供 `AiChatHost`，负责创建 branch 与执行；详见 [接口与集成约定](./ai-chat.md)。
+`interaction:ai-chat` / `AiChatPlugin` 支持独立行 `::@ 默认提示词` 和内联稳定锚点 `::@id@`，提供 render-only 选区插入、迷你图标、自动增高输入与独立只读回复预览。宿主提供 `AiChatHost`，负责创建 branch 与执行；详见 [接口与集成约定](./ai-chat.md)。

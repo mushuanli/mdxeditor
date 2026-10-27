@@ -1,67 +1,88 @@
-# AI Chat 输入插件
+# AI Chat 输入与只读回复预览
 
-`AiChatPlugin` 按需启用。预览模式将独立行 `::@ 默认提示词` 显示为
-`[当前 Agent 文字按钮] [默认提示词输入框] [+ 附件] [发送]`。点击 Agent 名称展开候选列表，选择后自动收起；键盘 Enter/Space 可展开，Escape 收起。
-`::@` 可不带默认提示词；代码围栏和行内文字中的标记不触发。
-编辑模式保留 Markdown 源码，输入框草稿不回写文档。
+`interaction:ai-chat` / `AiChatPlugin` 按需启用，不进入默认插件列表。
+所有类型从包根导出；核心不依赖 Session、VFS、itookit 或 llm-ui。
+
+## 文档入口
+
+- 兼容旧语法：独立行 `::@ 默认提示词`，直接显示输入行；代码围栏不触发。
+- 稳定锚点：正文 `::@<id>@`，渲染为一个 SVG 小图标，点击展开输入行。
+  ID 支持 1–128 个字母、数字、`_`、`-`，插入动作生成 UUID；多个锚点独立保存草稿。
+- 可写编辑器的 render mode 中选择正文后，浮动菜单和 toolbar 共用“为选区插入 AI”。
+  选中文字保留，标记插入选区末端，立即展开并将选中文字填入输入框、聚焦；无法证明 DOM 到源码的对应位置时提示重选，避免错插。
+  源码修改走 CodeMirror 用户事务，支持 dirty、保存与撤销。
+- 编辑模式、只读文档、回复预览及其他 AI 输入行中不提供选区插入。
+- textarea 从一行自动增高，达到上限后内部滚动；Enter 换行，Ctrl/⌘+Enter 发送。
+  点击当前 Agent 文字展开候选；Escape 收起。图片/文件粘贴加入附件，纯文本保持正常粘贴。
 
 ```ts
-import { AiChatPlugin, type AiChatHost } from '@itookit/mdxeditor';
+import {AiChatPlugin, type AiChatHost} from '@itookit/mdxeditor';
 
 const host: AiChatHost = {
-  listTargets: async ({ source, signal }) => [
-    { kind: 'agent', id: 'assistant', label: 'Assistant' },
-    { kind: 'flow', id: 'review', label: 'Review' },
-  ],
-  async onSubmit(request) {
-    // 在宿主中：解析文档所属上下文、处理附件、创建 branch、启动执行。
-    // request 包含 operationId / prompt / target / attachments / source / signal。
-    // 返回 branchId 可作为回执；插件不解释它，也不负责显示 branch。
-    await applicationSubmit(request);
-  },
+  listTargets: async ({source, signal}) => application.listTargets(source, signal),
+  createAnchor: async request => application.createDocumentAnchor(request),
+  getAnchor: async request => application.readDocumentAnchor(request),
+  observeAnchor: (request, changed) => application.observeDocumentAnchor(request, changed),
+  openConversation: async request => application.openDocumentBranch(request),
+  onSubmit: async request => application.submitDocumentChat(request),
 };
-editor.use(new AiChatPlugin({ host,
-  defaultTarget: { kind: 'agent', id: 'assistant' },
-}));
+// application is the host's implementation, not an mdxeditor API.
+editor.use(new AiChatPlugin({host}));
 ```
 
-`applicationSubmit` 是宿主提供的实现。也可在工厂的 `plugins` 配置中使用
-`['interaction:ai-chat', { host }]`。插件已注册，但未加入默认插件列表。
-所有契约从包根导出，见 `src/plugins/interactions/ai-chat.contracts.ts`。
+也可通过工厂 `plugins: [['interaction:ai-chat', {host}]]` 装配。
+`selectionActions: false` 关闭选区菜单和 toolbar 插入，保留已存在的输入。
+通用 toolbar 按钮可以声明 `modes: ['render']`，未声明者仍只在 edit mode 显示。
 
-## 回调约定
+## 宿主回调
 
-同一次草稿修订及其失败重试保留 `operationId`；修改提示词、目标或附件后，下次提交分配新 ID。成功后再次发送是新操作。宿主应持久记录该 ID，上传、创建 branch 和启动执行都沿原 ID 核对，不能因回调重试改为新的执行身份。
+| 回调 | 职责 |
+| --- | --- |
+| `createAnchor({source, selection, signal})` | 用户明确插入时持久记录选区、锚点与文档关系；不启动模型 |
+| `getAnchor({source, includeResponse, signal})` | 返回 `unbound/bound/missing`、默认提示词，以及可选的起始回复 Markdown、最新轮次 activity |
+| `observeAnchor(context, changed)` | 通知关系或回复变化，返回取消订阅函数；插件合并密集通知 |
+| `openConversation(context)` | 显式导航到绑定分支，核心不解释路由 |
+| `onSubmit(request)` | 校验附件/目标，持久接纳一次提交；首次建立分支，后续复用分支 |
+| `getDefaultTarget(context)` | 默认当前 Session/分支的 Agent 或 Flow，再回退 default |
+| `listTargets(context)` | 返回宿主允许展示的 Agent/Flow，ID 不透明 |
+| `pickAttachments(context)` | 可选宿主选择器；缺省为本地文件选择 |
 
-- `getDefaultTarget?({ source, signal })`：返回宿主当前目标的 `{kind, id}`，例如当前 Session 的 Agent；ID 必须与候选目录一致。显式 `defaultTarget` 优先，其次宿主偏好，再回退 `agent/default`、首个 Agent、首个目标。选择后的草稿不会被默认偏好覆盖。
-- `listTargets({ source, signal })`：返回 agent/flow 列表，标识由宿主解释。每个输入行初次挂载时加载。
-- 粘贴图片或文件会加入当前输入行附件，发送前可移除；纯文本保留浏览器正常粘贴行为。与文件选择一样，粘贴不自动上传，失败保留附件。
-- `pickAttachments?({ source, attachments, signal })`：返回本次新增的附件；返回空列表表示取消。未提供时打开本地多文件选择器。
-- `onSubmit(request)`：宿主接受请求、创建 branch 并启动执行后 resolve；失败 reject。插件提交期间禁用输入，拒绝重复提交；失败保留提示词与附件，成功清空附件并保留提示词。
-- `AiChatAttachment`：本地 `{ kind: 'file', file: File }` 或宿主已有资源 `{ kind: 'reference', id, name, mimeType? }`。选择附件不自动上传；上传、权限、大小限制和资源生命周期由宿主负责。
-- `source`：只有可选 `documentPath` 与原始 `defaultPrompt`。核心不推断 session、message、branch 或 namespace。
-- `signal`：插件销毁或渲染到另一个文档路径时取消。宿主应在异步步骤中检查；已创建 branch 的回滚由宿主决定。
+`source` 包含 `anchorId? / documentPath? / defaultPrompt`。
+`defaultPrompt` 和出现顺序均不能充当业务身份；锚点以文档身份 + anchorId 定位。
+同一锚点复制到另一文档如何处理，由宿主决定。无 AI 的文档不调用 `createAnchor`。
 
-草稿只在插件实例内存中保存，以文档路径、渲染块、默认提示词和同名出现序号区分。
-相同位置的完整/流式重渲染保留输入、附件和提交状态；修改默认提示词、调整块顺序或切换完整/流式渲染可能产生新草稿。
-草稿不持久化，实例销毁或文档路径变化后释放。`defaultPrompt` 不是可靠的业务身份或消息定位信息。
+`onSubmit` 收到 `operationId / prompt / target / attachments / source / signal`。
+同一次草稿修订及失败重试保留 operationId；修改内容后是新操作；成功后再次发送也是新操作。
+宿主应冻结原始提交请求并根据持久接纳回执核对，不能因为网络超时创建新的 Session。
+`branchId` 返回值只是回执，核心不把它解释成 Session 或路由。
+附件选择/粘贴不上传，提交失败保留；上传、大小限制、资源权限及清理由宿主管理。
 
-## 后续 itookit / llm-ui 集成边界
+旧 `::@ 提示词` 在宿主支持 createAnchor 且编辑器可写、处于 render mode 时，首次发送前迁移为
+稳定锚点，原默认提示词交给宿主保存；纯 renderer 和未提供 createAnchor 的调用方式继续兼容。
 
-建议 itookit 的 `ui/mdx-adapter` 构造 `AiChatHost`，用闭包绑定当前 session、来源消息和 branch 锚点。
-`documentPath` 仅用于宿主校验/定位文档，不能直接当作 session ID。不同来源消息需要不同的宿主绑定。
+## 回复预览
 
-建议的 `onSubmit` 流程（概念步骤，不代表已有 itookit API）：
+行末按钮可以展开/收起回复和“跳转到分支”。发送被宿主接纳后自动展开，显示最新轮次的回复。预览使用独立 `MDxRenderer`，固定只读，
+流式更新复用 `renderStreaming` / `StreamingDiffer`。不构造 MDxEditor、CodeMirror、toolbar 或模式切换。
+子 renderer 不安装 AI Chat/选区插件，`::@` 只作为普通文本；允许复制回复文字，不提供嵌套 AI。
+原始 HTML 按 literal 渲染，危险链接协议被移除。预览有独立高度上限和滚动条。
+当前预览范围为 Markdown 文本，不装配 llm-ui 工具卡片、执行控制或 Session 附件解析；
+完整会话、交互与后续轮次由“跳转到分支”进入宿主页面查看。
 
-1. 校验闭包中的来源消息、当前文档和所选 agent/flow；按需保存当前编辑内容。
-2. 将 `File` 上传到宿主资源系统，将 `reference.id` 解析为执行所需的附件引用。
-3. 在来源消息处创建子 branch，将提示词和附件作为新用户消息写入。
-4. 根据 `target.kind` 启动 agent 或 flow；请求被接受后返回 `{ branchId }`。
-5. 通过宿主状态管理打开/选中新 branch，把执行事件与流式输出交给 llm-ui 展示。
+宿主通过 `getAnchor.response` 固定返回初始 round/响应；`activity` 返回最新接纳轮次的
+`id / operationId? / status / markdown?`。status 为 `pending/completed/failed`。
+发送回调完成只表示已接纳；发送图标在等待或回复期间旋转，完成后恢复，失败显示错误图标。
+有部分 Markdown 时显示“正在回复”，尚无内容时显示“等待回复”；不根据接纳回执宣称回复完成。
+后续发送跟随最新回复，并提供切回起始回复的按钮；只收起预览不会取消执行。
+`includeResponse: false` 允许宿主只返回状态；展开时再提供正文。
 
-llm-ui 继续负责会话内容、消息状态、流式输出与 branch 导航。mdxeditor 提供输入入口，
-不引入 llm-ui 依赖，也不接收模型 token 流。若需在文档附近展示执行结果，后续可由宿主
-布局组合 llm-ui；当前接口不自动向 Markdown 插入回复。
+仅渲染文档时不获取 Agent 列表、关系或订阅；用户展开或操作输入后才激活宿主能力。
+点击发送后文档继续打开；后续消息追加原分支，删除分支后的策略与提示由宿主提供。
 
-创建 branch 与启动执行应由宿主封装为一个提交操作。若 branch 已创建但启动失败，
-宿主应复用该 branch 重试或自行清理，避免用户点击重试产生孤立 branch。
+## 元数据与反向链接
+
+核心只处理可见标记和回调，不读写业务 metadata，也不推断 Session/project/namespace。
+宿主应维护一条规范关系记录，文档 metadata 保存关系 ID 及必要投影，
+分支反向索引指向同一记录。文档改名、复制、撤销、删除分支、离线文件修复均由宿主协调。
+保存时可用导出的 `aiChatAnchorIds(markdown)` 获取真实锚点；它使用相同词法扩展排除代码和原始 HTML。
+不要通过全局正则把代码示例也当作活跃关系。

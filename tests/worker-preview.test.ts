@@ -85,7 +85,9 @@ it('releases the construction signal after init so an adopted editor can preview
     await editor.init(container, '# Retained'); controller.abort();
     await editor.switchToMode('render');
     expect(container.querySelector('h1')?.textContent).toBe('Retained');
-    editor.cancelPendingRender(); expect(editor.getMode()).toBe('edit');
+    editor.cancelPendingRender(); expect(editor.getMode()).toBe('render');
+    await editor.activate(); expect(editor.getMode()).toBe('render');
+    expect(container.querySelector('h1')?.textContent).toBe('Retained');
     await editor.destroy();
 });
 

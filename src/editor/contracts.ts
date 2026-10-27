@@ -59,6 +59,7 @@ export interface IEditor {
     destroy(): Promise<void>;
     getText(): string;
     setText(text: string): void;
+    replaceLoadedContent(text: string, expected?: string): void;
     focus(): void;
     getMode(): 'edit' | 'render';
     switchToMode(mode: 'edit' | 'render'): Promise<void>;

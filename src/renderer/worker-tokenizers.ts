@@ -1,5 +1,5 @@
 import type { MarkedExtension } from 'marked';
-export type WorkerSyntax = 'mdxAiChat' | 'math-display' | 'math-inline' | 'cloze:cloze' | 'mdxLink' | 'mdxTransclusion';
+export type WorkerSyntax = 'mdxAiChatAnchor' | 'mdxAiChat' | 'math-display' | 'math-inline' | 'cloze:cloze' | 'mdxLink' | 'mdxTransclusion';
 const identities = new WeakMap<Function, WorkerSyntax>();
 
 /** Shared lexical rules: worker tokenization and plugin renderers keep one grammar. */
@@ -7,6 +7,10 @@ export function builtinTokenizer(name: WorkerSyntax, nextCloze?: () => number): 
     let counter = 0;
     const next = nextCloze ?? (() => counter++);
     const tokenize = (src: string): any => {
+        if (name === 'mdxAiChatAnchor') {
+            const match = /^::@([a-zA-Z0-9_-]{1,128})@/.exec(src);
+            return match ? {type: name, raw: match[0], anchorId: match[1], prompt: ''} : undefined;
+        }
         if (name === 'mdxAiChat') {
             const match = /^::@(?:[ \t]+([^\r\n]*)|(?=\r?\n|$))(?:\r?\n|$)/.exec(src);
             return match ? { type: name, raw: match[0], prompt: (match[1] ?? '').trim() } : undefined;
@@ -48,7 +52,8 @@ export function workerSyntax(extensions: any[]): WorkerSyntax[] {
 export function lexicalExtension(name: WorkerSyntax): MarkedExtension {
     return { extensions: [{ name,
         level: name === 'math-display' || name === 'mdxTransclusion' || name === 'mdxAiChat' ? 'block' : 'inline',
-        start: src => name === 'mdxAiChat' ? src.match(/^::@(?=[ \t]|$)/m)?.index
+        start: src => name === 'mdxAiChatAnchor' ? src.match(/::@[a-zA-Z0-9_-]{1,128}@/)?.index
+            : name === 'mdxAiChat' ? src.match(/^::@(?=[ \t]|$)/m)?.index
             : name === 'math-display' ? src.match(/^\$\$/)?.index
             : name === 'math-inline' ? src.match(/\$/)?.index : name === 'cloze:cloze' ? src.match(/--/)?.index
             : name === 'mdxLink' ? src.indexOf('](') : src.match(/!@/)?.index,

@@ -147,6 +147,21 @@ export class MDxEditor implements IEditor {
         }
     }
 
+    /** Accept an explicit host reload and reset the recovery baseline without a write. */
+    replaceLoadedContent(markdown: string, expected?: string): void {
+        if (expected === undefined ? this.isDirty() : this.getText() !== expected) throw new Error('Unsaved changes: document reload refused');
+        this.setText(markdown);
+        this.eventBus.emit('contentLoaded');
+    }
+
+    /** A checked user edit preserves undo history and the normal dirty/save events. */
+    applySourceEdit(from: number, to: number, insert: string, expected: string): boolean {
+        if (this.config.readOnly || this.getText() !== expected || from < 0 || to < from || to > expected.length) return false;
+        this.cmAdapter.applyEdit(from, to, insert);
+        if (this.getMode() === 'render') void this.renderContent().catch(console.error);
+        return true;
+    }
+
     /**
      * 流式更新内容（增量渲染）
      *
@@ -431,13 +446,10 @@ export class MDxEditor implements IEditor {
         return this.printService;
     }
 
-    cancelPendingRender(): void {
-        this.renderer.cancelPending();
-        if (this._container && this.getMode() === 'render') {
-            void this.modeManager.switchTo('edit', this._container, async () => {});
-            this.renderer.getPluginManager().emit('modeChanged', { mode: 'edit' });
-            this.eventBus.emit('modeChanged', { mode: 'edit' });
-        }
+    cancelPendingRender(): void { this.renderer.cancelPending(); }
+
+    async activate(): Promise<void> {
+        if (this._container && this.getMode() === 'render') await this.renderContent();
     }
 
     async flushPendingSave(): Promise<void> {

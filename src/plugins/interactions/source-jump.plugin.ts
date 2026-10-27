@@ -41,6 +41,7 @@ export class SourceSyncPlugin implements MDxPlugin {
       }
 
       const target = event.target as HTMLElement;
+      if (target.closest('button, input, textarea, select, summary, .mdx-ai-chat')) return;
       const textToFind = this.extractText(target);
 
       if (textToFind && context.findAndSelectText && context.switchToMode) {

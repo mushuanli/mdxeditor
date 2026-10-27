@@ -128,6 +128,10 @@ export class CodeMirrorAdapter {
         });
     }
 
+    applyEdit(from: number, to: number, insert: string): void {
+        this.view?.dispatch({changes: {from, to, insert}, userEvent: 'input.plugin'});
+    }
+
     setReadOnly(isReadOnly: boolean): void {
         this.view?.dispatch({
             effects: this.readOnlyCompartment.reconfigure(EditorView.editable.of(!isReadOnly))

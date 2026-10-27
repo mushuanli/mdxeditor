@@ -336,3 +336,10 @@
     width: 2px;
   }
 }
+
+/* Opt-in render actions share the toolbar without exposing source formatting. */
+.is-render-mode .mdx-editor-toolbar--render-actions { display: flex; }
+.is-render-mode .mdx-editor-toolbar [data-button-modes]:not([data-button-modes~="render"]),
+.is-render-mode .mdx-editor-toolbar__separator,
+.is-edit-mode .mdx-editor-toolbar [data-button-modes]:not([data-button-modes~="edit"]),
+.mdx-editor-toolbar [hidden] { display: none; }

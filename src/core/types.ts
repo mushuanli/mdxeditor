@@ -35,6 +35,8 @@ export type ToolbarButtonConfig =
         title?: string;
         icon: string | HTMLElement;
         command?: string;
+        /** Toolbar actions default to source editing; render actions opt in explicitly. */
+        modes?: Array<'edit' | 'render'>;
         onClick?: (context: any) => void | Promise<void>;
         location?: 'main' | 'mode-switcher';
     }

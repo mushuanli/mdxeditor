@@ -19,6 +19,8 @@ export interface CoreTitleBarPluginOptions {
   overflowActions?: boolean;
   /** Mount generic host controls in the existing title bar and return their cleanup. */
   mountActions?: (container: HTMLElement) => (() => void) | void;
+  /** Mount host-owned entries inside the existing More menu. */
+  mountMoreMenu?: (container: HTMLElement, editor: MDxEditor) => (() => void) | void;
   /**
    * 是否启用编辑/阅读模式切换按钮
    * @default false
@@ -345,7 +347,8 @@ export class CoreTitleBarPlugin implements MDxPlugin {
     leftGroup.appendChild(titleContainer);
     this.cleanupActions?.();
     this.cleanupActions = mountTitlebarActions(rightGroup, rightFragment, {overflow: this.options.overflowActions,
-      label: this.translate('editor.moreActions'), mount: this.options.mountActions});
+      label: this.translate('editor.moreActions'), mount: this.options.mountActions,
+      mountMore: this.options.mountMoreMenu ? container => this.options.mountMoreMenu!(container, editor) : undefined});
 
     // 清空并重建标题栏
     titleBar.innerHTML = '';
