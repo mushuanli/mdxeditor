@@ -24,6 +24,9 @@
 .mdx-ai-chat__prompt { flex: 1; min-width: 8rem; }
 .mdx-ai-chat button { cursor: pointer; }
 .mdx-ai-chat button:disabled { opacity: .5; cursor: default; }
+.mdx-ai-chat__attach { flex: 0 0 auto; min-width: 2rem; }
+.mdx-ai-chat__history, .mdx-ai-chat__open { margin-top: .5rem; }
+.mdx-ai-chat__history:not([hidden]) + .mdx-ai-chat__open { margin-inline-start: .5rem; }
 .mdx-ai-chat__attachments { display: flex; flex-wrap: wrap; gap: .25rem; }
 .mdx-ai-chat__attachments:empty { display: none; }
 .mdx-ai-chat__status { flex-basis: 100%; font-size: .85em; overflow-wrap: anywhere; }
