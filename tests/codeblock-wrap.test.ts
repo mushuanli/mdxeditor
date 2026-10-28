@@ -13,7 +13,9 @@ it('toggles each code block independently without changing source and retains st
         const original = root.querySelector('pre')!.textContent;
         const buttons = root.querySelectorAll<HTMLButtonElement>('[data-mdx-code-wrap]');
         expect(buttons).toHaveLength(2);
-        expect(buttons[0].textContent).toBe('Wrap lines');
+        expect(buttons[0].getAttribute('aria-label')).toBe('Wrap lines');
+        expect(buttons[0].querySelector('svg')).not.toBeNull();
+        expect(buttons[0].textContent).toBe('');
         buttons[0].click();
         expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
         expect(buttons[1].getAttribute('aria-pressed')).toBe('false');

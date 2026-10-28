@@ -1,6 +1,7 @@
 import { DisclosureState, assignDisclosureKeys } from '../../renderer/disclosure-state';
 import { REVEAL_CONTENT_EVENT } from '../../renderer/reveal-content';
 import {t} from '../../utils/i18n';
+import {ACTION_ICONS} from '../../utils/icons';
 /**
  * @file mdx/plugins/interactions/codeblock-controls.plugin.ts
  * @description 代码块控制插件 - 流式输出优化版
@@ -272,11 +273,11 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     if (saved !== undefined) pre.dataset.mdxWrap = String(saved);
     const enabled = () => pre.dataset.mdxWrap === undefined
       ? !!pre.closest('.mdx-editor-renderer--wrap') : pre.dataset.mdxWrap === 'true';
-    const button = this._createButton('', this.options.wrapText, btn => {
+    const button = this._createButton(ACTION_ICONS.wordWrap, this.options.wrapText, btn => {
       const value = !enabled(); pre.dataset.mdxWrap = String(value);
       this.wrapState.set(key, value); btn.setAttribute('aria-pressed', String(value));
     }, pre);
-    button.textContent = this.options.wrapText; button.dataset.mdxCodeWrap = '';
+    button.setAttribute('aria-label', this.options.wrapText); button.dataset.mdxCodeWrap = '';
     button.setAttribute('aria-pressed', String(enabled()));
     return button;
   }
