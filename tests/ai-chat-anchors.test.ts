@@ -64,7 +64,7 @@ it('keeps independent mini icons, previews the initial response and releases obs
 it('inserts through the normal editor transaction only in writable render mode', async () => {
   const {createMDxEditor} = await import('../src/factory');
   Object.defineProperty(Range.prototype, 'getClientRects', {configurable: true, value: () => []});
-  Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect()});
+  Object.defineProperty(Range.prototype, 'getBoundingClientRect', {configurable: true, value: () => new DOMRect(0, 0, 0, 20)});
   vi.stubGlobal('matchMedia', () => ({matches: false, addEventListener() {}, removeEventListener() {}}));
   const create = vi.fn(async () => {}), root = document.createElement('div'); document.body.append(root);
   const editor = await createMDxEditor(root, {initialMode: 'render', initialContent: 'Selected **words**.', onSave: async () => {},

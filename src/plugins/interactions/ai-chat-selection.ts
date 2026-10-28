@@ -16,6 +16,20 @@ function topBlock(node: Node, root: HTMLElement): HTMLElement | undefined {
   return element?.parentElement === root ? element : undefined;
 }
 
+/** Measure the active selection endpoint, preserving backward selections. */
+function selectionCaretRect(selection: Selection, range: Range): DOMRect | undefined {
+  if (!selection.focusNode) return;
+  const caret = range.cloneRange();
+  caret.setStart(selection.focusNode, selection.focusOffset); caret.collapse(true);
+  const rect = caret.getBoundingClientRect?.();
+  if (rect && rect.height > 0) return rect;
+  // Element boundaries may have no caret box; use the endpoint's visual line.
+  const rects = Array.from(range.getClientRects?.() ?? []);
+  const backward = selection.focusNode === range.startContainer && selection.focusOffset === range.startOffset;
+  const line = backward ? rects[0] : rects.at(-1);
+  if (line) return new DOMRect(backward ? line.left : line.right, line.top, 0, line.height);
+}
+
 /** Match rendered context, then prove an insertion position by rendering a harmless sentinel.
  * Repeated paragraphs use their DOM occurrence; unsupported transforms fail instead of guessing. */
 export async function locateAiChatInsertion(markdown: string, range: Range, root: HTMLElement,
@@ -78,8 +92,10 @@ export class AiChatSelectionActions {
     popup.addEventListener('pointerdown', preserve); this.toolbar?.addEventListener('pointerdown', preserve);
     popup.onclick = () => {void this.insert();};
     const update = () => this.update(); document.addEventListener('selectionchange', update);
+    document.addEventListener('scroll', update, true); window.addEventListener('resize', update);
     const mode = editor.on('modeChanged', update); this.cleanups.push(mode);
     this.cleanups.push(() => document.removeEventListener('selectionchange', update),
+      () => document.removeEventListener('scroll', update, true), () => window.removeEventListener('resize', update),
       () => this.toolbar?.removeEventListener('pointerdown', preserve));
     this.update();
   }
@@ -94,8 +110,9 @@ export class AiChatSelectionActions {
     if (this.toolbar) {this.toolbar.hidden = !allowed; this.toolbar.disabled = !this.range;}
     if (!this.popup) return;
     this.popup.hidden = !this.range;
-    if (this.range) {
-      const rect = this.range.getBoundingClientRect?.() ?? this.root.getBoundingClientRect();
+    if (this.range && selection) {
+      const rect = selectionCaretRect(selection, this.range);
+      if (!rect) {this.popup.hidden = true; return;}
       this.popup.style.left = `${Math.max(8, Math.min(rect.right, innerWidth - 44))}px`;
       this.popup.style.top = `${Math.max(8, Math.min(rect.bottom + 6, innerHeight - 44))}px`;
     }
