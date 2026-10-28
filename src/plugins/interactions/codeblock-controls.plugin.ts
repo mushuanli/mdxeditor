@@ -1,5 +1,6 @@
 import { DisclosureState, assignDisclosureKeys } from '../../renderer/disclosure-state';
 import { REVEAL_CONTENT_EVENT } from '../../renderer/reveal-content';
+import {t} from '../../utils/i18n';
 /**
  * @file mdx/plugins/interactions/codeblock-controls.plugin.ts
  * @description 代码块控制插件 - 流式输出优化版
@@ -23,6 +24,8 @@ export interface CodeBlockControlsPluginOptions {
   enableDownload?: boolean;
   /** 启用折叠功能 */
   enableCollapse?: boolean;
+  /** Label for the per-block soft-wrap toggle. */
+  wrapText?: string;
   /** 默认是否折叠 */
   defaultCollapsed?: boolean;
   /** 展开按钮的提示文本 */
@@ -87,6 +90,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
   private collapseButtons = new WeakMap<HTMLPreElement, HTMLButtonElement>();
   private currentRenderContainer: HTMLElement | null = null;
   private disclosureState = new DisclosureState();
+  private wrapState = new DisclosureState();
 
   constructor(options: CodeBlockControlsPluginOptions = {}) {
     this.options = {
@@ -96,6 +100,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
       enableCopy: options.enableCopy !== false,
       enableDownload: options.enableDownload !== false,
       enableCollapse: options.enableCollapse !== false,
+      wrapText: options.wrapText ?? t('editor.wrap.label'),
       defaultCollapsed: options.defaultCollapsed !== false,
       expandText: options.expandText || '点击展开查看完整代码',
       streamingMode: options.streamingMode ?? false,
@@ -260,6 +265,21 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
   }
 
   // ==================== 折叠功能 ====================
+
+  private _createWrapButton(pre: HTMLPreElement): HTMLButtonElement {
+    const key = pre.getAttribute('data-mdx-disclosure-key')!;
+    const saved = this.wrapState.get(key);
+    if (saved !== undefined) pre.dataset.mdxWrap = String(saved);
+    const enabled = () => pre.dataset.mdxWrap === undefined
+      ? !!pre.closest('.mdx-editor-renderer--wrap') : pre.dataset.mdxWrap === 'true';
+    const button = this._createButton('', this.options.wrapText, btn => {
+      const value = !enabled(); pre.dataset.mdxWrap = String(value);
+      this.wrapState.set(key, value); btn.setAttribute('aria-pressed', String(value));
+    }, pre);
+    button.textContent = this.options.wrapText; button.dataset.mdxCodeWrap = '';
+    button.setAttribute('aria-pressed', String(enabled()));
+    return button;
+  }
 
   /**
    * 判断是否应该显示折叠按钮
@@ -434,6 +454,7 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     const rightButtons = document.createElement('div');
     rightButtons.className = `${this.options.classPrefix}-controls__right`;
     rightButtons.setAttribute('data-mdx-code-actions', '');
+    rightButtons.appendChild(this._createWrapButton(pre));
 
     // 添加功能按钮
     if (this.options.enableDownload) {
@@ -555,6 +576,14 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
    * 安装插件
    */
   install(context: PluginContext): void {
+    this.cleanupFns.push(context.listen('lineWrappingChanged', ({mode, enabled}: {mode: string; enabled: boolean}) => {
+      if (mode !== 'render') return;
+      this.wrapState.clear();
+      for (const pre of this.currentRenderContainer?.querySelectorAll<HTMLPreElement>('pre[data-enhanced]') ?? []) {
+        delete pre.dataset.mdxWrap;
+        pre.parentElement?.querySelector('[data-mdx-code-wrap]')?.setAttribute('aria-pressed', String(enabled));
+      }
+    }));
     const removeDomUpdated = context.on('domUpdated', ({
       element,
       options
@@ -594,5 +623,6 @@ export class CodeBlockControlsPlugin implements MDxPlugin {
     this.currentRenderContainer = null;
     this.collapseButtons = new WeakMap();
     this.disclosureState.clear();
+    this.wrapState.clear();
   }
 }
