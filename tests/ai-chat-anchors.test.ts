@@ -88,7 +88,7 @@ it('inserts through the normal editor transaction only in writable render mode',
     document.getSelection()!.removeAllRanges(); document.getSelection()!.addRange(range); document.dispatchEvent(new Event('selectionchange'));
     expect(button.hidden).toBe(true);
     await editor.switchToMode('edit'); expect(button.hidden).toBe(true);
-    expect(root.querySelector<HTMLButtonElement>('[data-button-id="ai-chat-insert"]')!.hidden).toBe(true);
+    expect(root.querySelector('[data-button-id="ai-chat-insert"]')).toBeNull();
   } finally {document.getSelection()?.removeAllRanges(); await editor.destroy(); vi.unstubAllGlobals();}
 });
 

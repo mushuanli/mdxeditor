@@ -65,7 +65,7 @@ export async function locateAiChatInsertion(markdown: string, range: Range, root
   throw new Error('无法准确定位选区的 Markdown 源码，请在普通段落中重新选择');
 }
 
-/** One render-only action shared by the selection menu and toolbar. */
+/** One render-only action, provided by the floating selection menu. */
 export class AiChatSelectionActions {
   private editor?: MDxEditor;
   private root?: HTMLElement;
@@ -74,29 +74,25 @@ export class AiChatSelectionActions {
   private busy = false;
   private disposed = false;
   private popup?: HTMLButtonElement;
-  private toolbar?: HTMLButtonElement;
   private cleanups: Array<() => void> = [];
   constructor(private context: PluginContext, private host: AiChatHost, private signal: () => AbortSignal, private inserted: (source: {anchorId: string; documentPath?: string; defaultPrompt: string}, selection: string) => void) {
-    context.registerToolbarButton?.({id: 'ai-chat-insert', modes: ['render'], title: '为选区插入 AI', icon: AI_CHAT_ICON, onClick: () => this.insert()});
     this.cleanups.push(context.on('editorPostInit', ({editor}: {editor: MDxEditor}) => this.mount(editor)));
   }
   private mount(editor: MDxEditor): void {
     this.editor = editor;
     if (!editor.container) return;
     this.root = editor.container.querySelector<HTMLElement>('.mdx-editor-container__render-mode') ?? undefined;
-    this.toolbar = editor.container.querySelector<HTMLButtonElement>('[data-button-id="ai-chat-insert"]') ?? undefined;
     const popup = this.popup = document.createElement('button'); popup.type = 'button'; popup.hidden = true;
     popup.className = 'mdx-ai-selection'; popup.innerHTML = AI_CHAT_ICON; popup.title = '为选区插入 AI'; popup.setAttribute('aria-label', popup.title);
     document.body.append(popup);
     const preserve = (event: Event) => event.preventDefault();
-    popup.addEventListener('pointerdown', preserve); this.toolbar?.addEventListener('pointerdown', preserve);
+    popup.addEventListener('pointerdown', preserve);
     popup.onclick = () => {void this.insert();};
     const update = () => this.update(); document.addEventListener('selectionchange', update);
     document.addEventListener('scroll', update, true); window.addEventListener('resize', update);
     const mode = editor.on('modeChanged', update); this.cleanups.push(mode);
     this.cleanups.push(() => document.removeEventListener('selectionchange', update),
-      () => document.removeEventListener('scroll', update, true), () => window.removeEventListener('resize', update),
-      () => this.toolbar?.removeEventListener('pointerdown', preserve));
+      () => document.removeEventListener('scroll', update, true), () => window.removeEventListener('resize', update));
     this.update();
   }
   private update(): void {
@@ -107,7 +103,6 @@ export class AiChatSelectionActions {
       && !(range.startContainer.parentElement?.closest('.mdx-ai-chat') || range.endContainer.parentElement?.closest('.mdx-ai-chat'));
     this.range = valid ? range.cloneRange() : undefined;
     this.text = valid ? this.editor.getText() : '';
-    if (this.toolbar) {this.toolbar.hidden = !allowed; this.toolbar.disabled = !this.range;}
     if (!this.popup) return;
     this.popup.hidden = !this.range;
     if (this.range && selection) {

@@ -29,7 +29,7 @@ interface MDxPlugin {
 | 自动完成 | `MentionPlugin` | @-mention |
 | | `TagPlugin` | #-tag 自动完成 |
 | Anki | `ClozePlugin` / `MemoryPlugin` | 完形填空/间隔重复 |
-| UI | `ToolbarPlugin` / `TitleBarPlugin` | 工具栏/标题栏 |
+| UI | `ToolbarPlugin` / `TitleBarPlugin` | 工具栏/标题栏；`ui:toolbar` 在 edit 模式显示，render 模式隐藏整行 |
 
 ## 宿主与数据适配
 

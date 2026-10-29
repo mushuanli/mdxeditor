@@ -8,7 +8,7 @@
 - 兼容旧语法：独立行 `::@ 默认提示词`，直接显示输入行；代码围栏不触发。
 - 稳定锚点：正文 `::@<id>@`，渲染为一个 SVG 小图标，点击展开输入行。
   ID 支持 1–128 个字母、数字、`_`、`-`，插入动作生成 UUID；多个锚点独立保存草稿。
-- 可写编辑器的 render mode 中选择正文后，浮动菜单和 toolbar 共用“为选区插入 AI”。
+- 可写编辑器的 render mode 中选择正文后，浮动菜单提供“为选区插入 AI”；render 模式隐藏整行工具栏，仅通过选区旁的浮动图标插入。
   浮动图标跟随选区活动端的光标位置，支持跨行与反向选择，并随滚动、窗口缩放重新定位。
   选中文字保留，标记插入选区末端，立即展开并将选中文字填入输入框、聚焦；无法证明 DOM 到源码的对应位置时提示重选，避免错插。
   源码修改走 CodeMirror 用户事务，支持 dirty、保存与撤销。
@@ -33,7 +33,7 @@ editor.use(new AiChatPlugin({host}));
 
 也可通过工厂 `plugins: [['interaction:ai-chat', {host}]]` 装配。
 `selectionActions: false` 关闭选区菜单和 toolbar 插入，保留已存在的输入。
-通用 toolbar 按钮可以声明 `modes: ['render']`，未声明者仍只在 edit mode 显示。
+通用 toolbar 按钮按 `modes` 过滤，未声明者默认属于 edit；render 模式始终隐藏整个 toolbar。
 
 ## 宿主回调
 

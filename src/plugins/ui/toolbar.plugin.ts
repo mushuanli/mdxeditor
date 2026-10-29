@@ -69,7 +69,6 @@ export class ToolbarPlugin implements MDxPlugin {
     this.toolbarElement = toolbarContainer;
 
     const buttons = pluginManager.getToolbarButtons();
-    toolbarContainer.classList.toggle(`${this.options.className}--render-actions`, !editor.config.readOnly && buttons.some(button => button.type !== 'separator' && button.modes?.includes('render')));
 
     toolbarContainer.innerHTML = '';
 

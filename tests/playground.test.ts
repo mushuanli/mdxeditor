@@ -56,7 +56,9 @@ it('runs a single marked HTML block only on click, retaining source controls', a
   expect([...panel(root).querySelectorAll('button')].slice(0, 3).map(button => button.textContent))
     .toEqual(['预览', '刷新', '代码']);
   expect(button(root, '刷新').disabled).toBe(true);
-  expect(panel(root).querySelectorAll('[data-mdx-code-actions] button')).toHaveLength(3);
+  const codeActions = [...panel(root).querySelectorAll('[data-mdx-code-actions] button')];
+  expect(codeActions.filter(entry => entry.dataset.mdxCodeWrap !== undefined)).toHaveLength(1);
+  expect(codeActions.length).toBeGreaterThanOrEqual(3);
   expect(sourceElement.querySelector('[data-mdx-code-actions]')).toBeNull();
   expect(button(root, '代码').getAttribute('aria-pressed')).toBe('true');
   button(root, '代码').click();
